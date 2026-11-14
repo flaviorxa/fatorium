@@ -48,11 +48,19 @@ Abra `http://localhost:8443` — usuário padrão `invest`, quando a autenticaç
 A primeira execução dispara a coleta inicial em segundo plano (~15–20 min para o universo padrão);
 até ela terminar, as telas mostram pouco ou nenhum dado.
 
-Ou, em uma linha (cria o diretório e sobe; use `--senha` para gerar a senha):
+Ou, em uma linha (cria o diretório e sobe sem senha):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh | sh
+```
+
+Quer exigir login? O mesmo instalador gera a senha para você com `--senha`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh | sh -s -- --senha
 ```
+
+(`--porta N` muda a porta publicada; sem ele, 8443.)
 
 ### CasaOS
 
