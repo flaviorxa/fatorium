@@ -2,7 +2,7 @@ import base64
 
 import pytest
 
-USUARIO_TESTE = "flavio"
+USUARIO_TESTE = "teste"
 SENHA_TESTE = "senha-de-teste-bem-longa-123"
 CABECALHO_TESTE = {
     "Authorization": "Basic "

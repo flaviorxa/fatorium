@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 from datetime import date
 from pathlib import Path
@@ -14,7 +15,7 @@ from app.api.main import app
 from app.motor import rankings
 from tests.conftest import CABECALHO_TESTE
 
-LISTA_REAL = Path("/home/ubuntu/Obsidian/investimentos/lista-de-ativos.md")
+LISTA_REAL = config.RAIZ / "config" / "universo.md"
 
 
 def _copiar_lista(tmp_path, monkeypatch) -> Path:
@@ -38,31 +39,39 @@ def test_incluir_edita_apenas_a_linha_da_secao_e_o_atualizado(
 ):
     lista = _copiar_lista(tmp_path, monkeypatch)
     antes = lista.read_text(encoding="utf-8")
+    cabecalho_antes = next(
+        l for l in antes.splitlines() if l.startswith("## Ações (")
+    )
+    contagem_antes = int(re.search(r"\((\d+)\)", cabecalho_antes).group(1))
+    linhas_antes = antes.splitlines()
+    indice_cabecalho_antes = linhas_antes.index(cabecalho_antes)
+    linha_acoes_antes = linhas_antes[indice_cabecalho_antes + 1]
     resultado = universo.incluir("MGLU3", "acao_b3")
     depois = lista.read_text(encoding="utf-8")
 
     assert resultado["ticker"] == "MGLU3"
-    assert "## Ações (57)" in depois
-    assert "BBDC4, MGLU3" in depois
+    assert f"## Ações ({contagem_antes + 1})" in depois
+    conteudo_depois = next(
+        l for l in depois.splitlines() if l.startswith("## Ações (")
+    )
+    linha_acoes_depois = depois.splitlines()[
+        depois.splitlines().index(conteudo_depois) + 1
+    ]
+    assert linha_acoes_depois.rstrip().endswith(", MGLU3")
     hoje = date.today().strftime("%d/%m/%Y")
     assert f"> Atualizado: {hoje}" in depois
     assert "incluído pela tela" in depois
 
-    linhas_antes = antes.splitlines()
-    linha_acoes_antes = next(l for l in linhas_antes if l.startswith("BPAC11"))
-    linha_acoes_depois = next(
-        l for l in depois.splitlines() if l.startswith("BPAC11")
-    )
     atualizado_antes = next(l for l in linhas_antes if l.startswith("> Atualizado:"))
     atualizado_depois = next(
         l for l in depois.splitlines() if l.startswith("> Atualizado:")
     )
     assert _sem_linhas_alteradas(
         antes,
-        {"## Ações (56)", linha_acoes_antes, atualizado_antes},
+        {cabecalho_antes, linha_acoes_antes, atualizado_antes},
     ) == _sem_linhas_alteradas(
         depois,
-        {"## Ações (57)", linha_acoes_depois, atualizado_depois},
+        {f"## Ações ({contagem_antes + 1})", linha_acoes_depois, atualizado_depois},
     )
 
     backups = list((tmp_path / "backups").glob("lista-ativos-*.md"))
@@ -100,11 +109,19 @@ def test_excluir_remove_da_linha_e_preserva_cotacoes(tmp_path, monkeypatch):
         ),
     )
 
+    antes = lista.read_text(encoding="utf-8")
+    cabecalho_antes = next(
+        l for l in antes.splitlines() if l.startswith("## Ações (")
+    )
+    contagem_antes = int(
+        re.search(r"\((\d+)\)", cabecalho_antes).group(1)
+    )
+
     resultado = universo.excluir("PETR4")
 
     depois = lista.read_text(encoding="utf-8")
-    assert resultado["contagem"] == 55
-    assert "## Ações (55)" in depois
+    assert resultado["contagem"] == contagem_antes - 1
+    assert f"## Ações ({contagem_antes - 1})" in depois
     assert "PETR4" not in universo.ler()
     with db.conectar() as conn:
         total = conn.execute(
