@@ -65,7 +65,7 @@ async def lifespan(_: FastAPI) -> Any:
         agenda.parar_scheduler()
 
 
-app = FastAPI(title="InvestIQ", lifespan=lifespan)
+app = FastAPI(title="FarolB3", lifespan=lifespan)
 app.add_middleware(AutenticacaoMiddleware)
 app.add_middleware(NaoIndexarMiddleware)
 

@@ -1,18 +1,18 @@
 x-casaos:
   architectures:
     - amd64
-  main: investiq
-  app_id: "investiq"
+  main: farolb3
+  app_id: "farolb3"
   title:
-    en_us: InvestIQ
-    pt_br: InvestIQ
+    en_us: FarolB3
+    pt_br: FarolB3
   tagline:
     en_us: "Análise fundamentalista de ações, FIIs e ETFs da B3"
     pt_br: "Análise fundamentalista de ações, FIIs e ETFs da B3"
   description:
     en_us: "Fundamental analysis for Brazilian stocks, REITs and ETFs using public data. Free and self-hosted."
     pt_br: "Análise fundamentalista de ações, FIIs e ETFs da B3 com dados de fontes públicas. Sem custo e rodando localmente."
-  icon: "https://raw.githubusercontent.com/flaviorxa/investiq/main/app/static/logo.png"
+  icon: "https://raw.githubusercontent.com/flaviorxa/farolb3/main/app/static/logo.png"
   category: "Finance"
   port_map: "8080"
   scheme: "http"
@@ -26,18 +26,18 @@ x-casaos:
         pt_br: "Defina uma senha forte (16+ caracteres) no arquivo .env"
 
 services:
-  investiq:
-    image: ghcr.io/flaviorxa/investiq:latest
-    container_name: investiq
+  farolb3:
+    image: ghcr.io/flaviorxa/farolb3:latest
+    container_name: farolb3
     restart: unless-stopped
     ports:
-      - "${INVESTIQ_PORTA:-8080}:8000"
+      - "${FAROLB3_PORTA:-8080}:8000"
     environment:
       INVEST_SENHA: ${INVEST_SENHA:?defina INVEST_SENHA no .env}
       INVEST_USUARIO: ${INVEST_USUARIO:-invest}
       TZ: America/Sao_Paulo
     volumes:
-      - investiq-data:/app/data
+      - farolb3-data:/app/data
 
 volumes:
-  investiq-data:
+  farolb3-data:

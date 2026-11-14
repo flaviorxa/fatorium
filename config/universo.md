@@ -1,4 +1,4 @@
-# Lista de Ativos — InvestIQ
+# Lista de Ativos — FarolB3
 
 > Lista padrão do universo. Edite pela tela "Cadastro de Ativos" ou direto neste arquivo.
 > Atualizado: 14/11/2026 — lista de exemplo, substitua pelos ativos que você acompanha.

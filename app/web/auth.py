@@ -15,7 +15,7 @@ from starlette.responses import PlainTextResponse, Response
 
 USUARIO_PADRAO = "invest"
 TAMANHO_MINIMO_SENHA = 16
-DESAFIO_BASIC = 'Basic realm="InvestIQ", charset="UTF-8"'
+DESAFIO_BASIC = 'Basic realm="FarolB3", charset="UTF-8"'
 CABECALHO_ROBOTS = "noindex, nofollow, noarchive, nosnippet"
 METODOS_QUE_ALTERAM = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
