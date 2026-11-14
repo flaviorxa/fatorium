@@ -185,6 +185,15 @@ def test_paginas_tem_idioma_e_aviso_cvm(cliente):
         assert "CVM/Anbima" in resposta.text, caminho
 
 
+def test_rodape_tem_links_do_github_e_doacoes(cliente):
+    resposta = cliente.get("/")
+
+    assert resposta.status_code == 200
+    assert 'href="https://github.com/flaviorxa/fatorium"' in resposta.text
+    assert 'href="https://github.com/flaviorxa/fatorium#apoie-o-projeto"' in resposta.text
+    assert "Doações (Bitcoin)" in resposta.text
+
+
 def test_api_screening_devolve_as_seis_listas(cliente):
     resposta = cliente.get("/api/screening?classe=acao_b3")
 

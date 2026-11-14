@@ -513,6 +513,17 @@ tbody tr:hover {
   margin-block: 0.2rem;
 }
 
+.rodape-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rodape-links span {
+  color: var(--borda);
+}
+
 @media (max-width: 640px) {
   main.limite {
     padding-block: 1rem 2rem;
