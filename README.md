@@ -113,6 +113,22 @@ que mudou e como verificou. Preferências do projeto: sem dependência nova para
 padrão resolve, CSS/JS sempre em arquivo externo (CSP `script-src 'self'`), e toda fonte de dado
 nova entra como adaptador em `app/fontes/` com teste que não toca a rede.
 
+## Apoie o projeto
+
+O FATORIUM é gratuito, aberto e roda na sua máquina — sem assinatura, sem chave de API e sem
+telemetria. Se ele te economiza tempo na análise, dá para retribuir com uma doação ou um café:
+isso paga horas de manutenção, novas fontes de dados e as correções que sempre aparecem quando um
+site muda de layout.
+
+**Bitcoin (BTC)**
+
+```
+bc1q6n8ky26je0ngx5m5w347g3p52jmu6kl04sprlx
+```
+
+Qualquer valor é bem-vindo. Doação é espontânea: não compra suporte, prioridade em issues nem
+influência nas decisões do projeto.
+
 ## Licença
 
 **GNU AGPL v3.0** — use, modifique e redistribua livremente, mantendo o aviso de copyright e o
