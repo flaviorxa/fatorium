@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% import "_tabela.html" as t %}
+{% block titulo %}{{ nome }} — Ranking — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<p class="trilha"><a href="/rankings">Rankings</a> / {{ nome }}</p>
+<h1>{{ nome }}</h1>
+<p class="ajuda">
+  Gerado em {{ formato.data_br(ranking.gerado_em) }} ·
+  universo de {{ ranking.universo_n }} ativo(s) avaliado(s) ·
+  {{ ranking.itens|length }} elegível(is) e {{ ranking.fora_da_lista|length }} fora da lista.
+</p>
+{% if ranking.config.pontuacao %}
+  <p class="ajuda">Pontuação: {{ ranking.config.pontuacao }}. Desempate: {{ ranking.config.desempate }}.</p>
+{% endif %}
+
+{% if ranking.estrategia == "upside_consenso" and not cols_param %}
+  <p class="ajuda">
+    Ativos em que os analistas do MSN projetam o maior retorno até o
+    preço-alvo médio, com cobertura mínima de 3 analistas e alvo da mesma
+    classe do papel. O preço-alvo é opinião de analistas, não cálculo do sistema;
+    consenso muda sem aviso.
+  </p>
+  {% if ranking.itens|length < 3 %}
+    <p class="aviso">
+      A lista tem apenas {{ ranking.itens|length }} ativo(s) elegível(is)
+      e {{ ranking.fora_da_lista|length }} fora da lista.
+    </p>
+  {% endif %}
+  <h2>Tabela completa</h2>
+  {% if ranking.itens %}
+    <div class="tabela-rolagem">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col" class="num">Posição</th>
+            <th scope="col">Ticker</th>
+            <th scope="col" class="num">Preço</th>
+            <th scope="col" class="num">Alvo médio</th>
+            <th scope="col" class="num">Upside</th>
+            <th scope="col" class="num">DY</th>
+            <th scope="col">Analistas (C/N/V)</th>
+            <th scope="col">Data do consenso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in ranking.itens %}
+            {% set dados = item.get("dados", {}) %}
+            {% set preco = dados.get("preco") if dados.get("preco") is not none else item.get("preco") %}
+            {% set alvo = dados.get("alvo_medio") if dados.get("alvo_medio") is not none else item.get("alvo_medio") %}
+            {% set upside = dados.get("upside_pct") %}
+            {% set compra = dados.get("consenso_compra") if dados.get("consenso_compra") is not none else item.get("consenso_compra") %}
+            {% set neutro = dados.get("consenso_neutro") if dados.get("consenso_neutro") is not none else item.get("consenso_neutro") %}
+            {% set venda = dados.get("consenso_venda") if dados.get("consenso_venda") is not none else item.get("consenso_venda") %}
+            {% set data = dados.get("data_consenso") or item.get("consenso_data_ref") or item.get("data_ref") %}
+            <tr>
+              <td class="num">{{ item.posicao if item.posicao is not none else "N/A" }}</td>
+              <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+              <td class="num">{{ formato.moeda(preco) or "N/A" }}</td>
+              <td class="num">{{ formato.moeda(alvo) or "N/A" }}</td>
+              <td class="num">{{ formato.percentual(upside, casas=1, sinal=True) or "N/A" }}</td>
+              <td class="num">{{ t.dy(item.get("indicadores", {}).get("dy")) }}</td>
+              <td>{{ formato.inteiro(compra) }}C · {{ formato.inteiro(neutro) }}N · {{ formato.inteiro(venda) }}V</td>
+              <td>{{ formato.data_br(data) or "N/A" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="ajuda">Nenhum ativo elegível nesta lista.</p>
+  {% endif %}
+{% endif %}
+
+{% if ranking.estrategia in ("fiis_ltm", "regularidade_proventos") and not cols_param %}
+<h2>Tabela completa</h2>
+{{ t.tabela(colunas, linhas) }}
+{% endif %}
+
+{% if (ranking.estrategia not in ("upside_consenso", "fiis_ltm", "regularidade_proventos")) or cols_param %}
+<h2>Tabela completa</h2>
+{% if cols_param %}
+  {{ t.tabela(colunas, linhas) }}
+{% else %}
+<div class="tabela-rolagem">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col" class="num">Posição</th>
+        <th scope="col">Ticker</th>
+        <th scope="col" class="num">DY</th>
+        {% if tem_consenso %}
+          <th scope="col" title="C = compra, N = neutro, V = venda{% if consenso_data %} · fonte atualizada em {{ consenso_data }}{% endif %}">Consenso</th>
+          <th scope="col" title="Preço-alvo médio do consenso MSN{% if consenso_data %} · fonte atualizada em {{ consenso_data }}{% endif %}">Alvo</th>
+        {% endif %}
+        {% if ranking.estrategia == "magic_formula" %}
+          <th scope="col" class="num">EV/EBIT</th>
+          <th scope="col" class="num">EBIT/EV (%)</th>
+        {% endif %}
+        <th scope="col" class="num">Pontuação</th>
+        <th scope="col">Critérios atendidos</th>
+        <th scope="col">Critérios não atendidos</th>
+        <th scope="col">Indisponíveis</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in itens %}
+        <tr>
+          <td class="num">{{ item.posicao if item.posicao is not none else "N/A" }}</td>
+          <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+          <td class="num">{{ t.dy((item.get("indicadores") or {}).get("dy")) }}</td>
+          {% if tem_consenso %}
+            <td{% if item.consenso_resumo and item.consenso_resumo.alvo_classe_duvidosa %} title="classe em dúvida (o alvo pode ser da unit/outra classe do papel)"{% endif %}>{{ item.consenso_resumo.texto if item.consenso_resumo else "N/A" }}</td>
+            <td>{{ item.consenso_resumo.alvo_texto if item.consenso_resumo and item.consenso_resumo.alvo_texto else "N/A" }}</td>
+          {% endif %}
+          {% if ranking.estrategia == "magic_formula" %}
+            <td class="num">{{ formato.numero(item.dados.get("ev_ebit")) or "N/A" }}</td>
+            <td class="num">{{ formato.percentual(item.dados.get("ebit_ev_pct")) or "N/A" }}</td>
+          {% endif %}
+          <td class="num">{{ formato.numero(item.pontuacao) or "N/A" }}</td>
+          <td>
+            {% if item.aprovados %}
+              <ul class="criterios">
+                {% for chave in item.aprovados %}
+                  <li>{{ chave.replace("_", " ") }}: {{ item.motivos.get(chave, "motivo não registrado") }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <span class="ajuda">nenhum</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.reprovados %}
+              <ul class="criterios">
+                {% for chave in item.reprovados %}
+                  <li>{{ chave.replace("_", " ") }}: {{ item.motivos.get(chave, "motivo não registrado") }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <span class="ajuda">nenhum</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.indisponiveis %}
+              <ul class="criterios">
+                {% for chave in item.indisponiveis %}
+                  <li>{{ chave.replace("_", " ") }}: {{ item.motivos.get(chave, "sem dado na fonte") }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <span class="ajuda">nenhum</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="{{ (9 if ranking.estrategia == 'magic_formula' else 7) + (2 if tem_consenso else 0) }}">Ranking sem itens elegíveis.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+
+{% if ranking.fora_da_lista %}
+  <h2>Fora da lista</h2>
+  <div class="tabela-rolagem">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Ticker</th>
+          <th scope="col">Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entrada in ranking.fora_da_lista %}
+          <tr>
+            <td><a href="/ativos/{{ entrada.ticker }}">{{ entrada.ticker }}</a></td>
+            <td>{{ entrada.motivo }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

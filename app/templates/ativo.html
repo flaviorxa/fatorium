@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+{% block titulo %}{{ ticker }} — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<p class="trilha"><a href="/ativos">Ativos</a> / {{ ticker }}</p>
+<h1>{{ ticker }}{% if dados.ativo.nome %} <span class="muted">— {{ dados.ativo.nome }}</span>{% endif %}</h1>
+<p class="ajuda">
+  {{ nome_classe(dados.ativo.classe) }}
+  {% if dados.ativo.setor %} · {{ dados.ativo.setor }}{% endif %}
+  {% if dados.ativo.moeda %} · moeda {{ dados.ativo.moeda }}{% endif %}
+</p>
+{% if links_externos %}
+<p class="ajuda fontes-externas">
+  Consultar em:
+  {% for link in links_externos %}<a href="{{ link.url }}" target="_blank" rel="noopener">{{ link.nome }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+</p>
+{% endif %}
+
+<nav class="abas" aria-label="Abas do ativo">
+  <a href="/ativos/{{ ticker }}?aba=resumo" {% if aba == "resumo" %}aria-current="page"{% endif %}>Resumo</a>
+  <a href="/ativos/{{ ticker }}?aba=lista" {% if aba == "lista" %}aria-current="page"{% endif %}>Por que está na lista</a>
+  <a href="/ativos/{{ ticker }}/tecnico" {% if aba == "tecnico" %}aria-current="page"{% endif %}>Técnico</a>
+  <a href="/ativos/{{ ticker }}?aba=historico" {% if aba == "historico" %}aria-current="page"{% endif %}>Histórico</a>
+  <a href="/ativos/{{ ticker }}?aba=comparar" {% if aba == "comparar" %}aria-current="page"{% endif %}>Comparar</a>
+</nav>
+
+{% if aba == "resumo" %}
+  <section aria-labelledby="resumo-preco">
+    <h2 id="resumo-preco">Último fechamento</h2>
+    {% set dy_informado = indicadores.get("dy") %}
+    {% set dy_valor = dy_informado if dy_informado is not none else indicadores.get("dy_12m_calculado") %}
+    {% set dy_origem = "informado pela fonte" if dy_informado is not none else "proventos de 12 meses / fechamento" %}
+    <div class="cartoes">
+      <div class="cartao">
+        <span class="cartao-rotulo">Fechamento</span>
+        {% if dados.ultima %}
+          <strong class="cartao-numero">{{ formato.moeda(dados.ultima.fechamento) or "N/A" }}</strong>
+          <span class="cartao-detalhe">{{ data_cotacao }}</span>
+        {% else %}
+          <strong class="cartao-numero na" title="sem cotação na fonte">N/A</strong>
+          <span class="cartao-detalhe">sem cotação na fonte</span>
+        {% endif %}
+      </div>
+      <div class="cartao cartao-destaque">
+        <span class="cartao-rotulo">Dividend yield</span>
+        {% if dy_valor is not none %}
+          <strong class="cartao-numero dy">{{ formato.percentual(dy_valor) }}</strong>
+          <span class="cartao-detalhe">{{ dy_origem }}</span>
+        {% else %}
+          <strong class="cartao-numero na" title="sem DY na fonte e sem provento nos últimos 12 meses">N/A</strong>
+          <span class="cartao-detalhe">sem DY na fonte</span>
+        {% endif %}
+      </div>
+      <div class="cartao">
+        <span class="cartao-rotulo">Variação no último dia</span>
+        {% if dados.variacao_pct is not none %}
+          <strong class="cartao-numero">{{ formato.percentual(dados.variacao_pct, sinal=True) }}</strong>
+        {% else %}
+          <strong class="cartao-numero na" title="é preciso pelo menos dois fechamentos">N/A</strong>
+        {% endif %}
+      </div>
+      <div class="cartao">
+        <span class="cartao-rotulo">Volume</span>
+        <strong class="cartao-numero">{{ formato.inteiro(dados.ultima.volume if dados.ultima else none) or "N/A" }}</strong>
+        <span class="cartao-detalhe">{{ data_cotacao }}</span>
+      </div>
+    </div>
+  </section>
+
+  {% if dados.ativo.classe == "fii" %}
+  <section aria-labelledby="resumo-retorno-12m">
+    <h2 id="resumo-retorno-12m">Retorno total nos últimos 12 meses</h2>
+    <div class="cartoes">
+      <div class="cartao">
+        <span class="cartao-rotulo">Retorno total 12m</span>
+        {% if dados.retorno_12m.retorno_total_12m_pct is not none %}
+          <strong class="cartao-numero {{ 'status-atende' if dados.retorno_12m.retorno_total_12m_pct >= 0 else 'status-nao-atende' }}">{{ formato.percentual(dados.retorno_12m.retorno_total_12m_pct, sinal=True) }}</strong>
+        {% else %}
+          <strong class="cartao-numero na" title="sem cotação de 12 meses atrás">N/A</strong>
+        {% endif %}
+      </div>
+      <div class="cartao">
+        <span class="cartao-rotulo">Valorização da cota 12m</span>
+        {% if dados.retorno_12m.valorizacao_12m_pct is not none %}
+          <strong class="cartao-numero">{{ formato.percentual(dados.retorno_12m.valorizacao_12m_pct, sinal=True) }}</strong>
+        {% else %}
+          <strong class="cartao-numero na" title="sem cotação de 12 meses atrás">N/A</strong>
+        {% endif %}
+      </div>
+      <div class="cartao">
+        <span class="cartao-rotulo">Proventos 12m</span>
+        <strong class="cartao-numero">{{ formato.moeda(dados.retorno_12m.proventos_12m) or "N/A" }}</strong>
+        <span class="cartao-detalhe">{{ formato.percentual(dados.retorno_12m.proventos_12m_pct, sinal=True) or "N/A" }}</span>
+      </div>
+    </div>
+    {% if dados.retorno_12m.data_inicial %}
+      <p class="ajuda">De {{ formato.data_br(dados.retorno_12m.data_inicial) }} a {{ formato.data_br(dados.retorno_12m.data_final) }}; preço inicial {{ formato.moeda(dados.retorno_12m.preco_inicial) }}; proventos com data ex no período.</p>
+    {% else %}
+      <p class="na" title="sem cotação de 12 meses atrás">N/A — sem cotação de 12 meses atrás</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section aria-labelledby="bloco-cotacao">
+    <h2 id="bloco-cotacao">Cotação</h2>
+    <p class="ajuda">Data de referência: {{ data_cotacao or "N/A" }}.</p>
+    <div class="tabela-rolagem">
+      <table>
+        <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">Valor</th><th scope="col">Data de referência</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Fechamento</td>
+            <td class="num">{{ formato.moeda(dados.ultima.fechamento if dados.ultima else none) or "N/A" }}</td>
+            <td>{{ data_cotacao or "N/A" }}</td>
+          </tr>
+          <tr>
+            <td>Variação diária</td>
+            <td class="num">{{ formato.percentual(dados.variacao_pct, sinal=True) or "N/A" }}</td>
+            <td>{{ data_cotacao or "N/A" }}</td>
+          </tr>
+          <tr>
+            <td>Volume</td>
+            <td class="num">{{ formato.inteiro(dados.ultima.volume if dados.ultima else none) or "N/A" }}</td>
+            <td>{{ data_cotacao or "N/A" }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if estimativas %}
+  <section aria-labelledby="bloco-estimativas">
+    <h2 id="bloco-estimativas">Estimativas de valor</h2>
+    <p class="ajuda">Preço atual: {{ estimativas.preco_texto }}. A margem compara a estimativa com o preço atual: positiva significa que o ativo negocia abaixo dela.</p>
+    <div class="tabela-rolagem">
+      <table>
+        <thead><tr><th scope="col">Método</th><th scope="col" class="num">Estimativa</th><th scope="col" class="num">Margem</th><th scope="col">Base do cálculo</th></tr></thead>
+        <tbody>
+          {% for linha in estimativas.linhas %}
+            <tr>
+              <td>{{ linha.rotulo }}</td>
+              <td class="num">
+                {% if linha.motivo %}<span class="na" title="{{ linha.motivo }}">N/A</span>{% else %}{{ linha.valor_texto }}{% endif %}
+              </td>
+              <td class="num">
+                {% if linha.margem_positiva is none %}
+                  <span class="na" title="{{ linha.motivo or 'sem preço atual' }}">N/A</span>
+                {% elif linha.margem_positiva %}
+                  <strong class="status-atende">{{ linha.margem_texto }}</strong>
+                {% else %}
+                  <strong class="status-nao-atende">{{ linha.margem_texto }}</strong>
+                {% endif %}
+              </td>
+              <td>{{ linha.detalhe }}{% if linha.motivo and linha.detalhe %} — {{ linha.motivo }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <section aria-labelledby="bloco-demonstracoes">
+    <h2 id="bloco-demonstracoes">Demonstrações</h2>
+    <p class="ajuda">Data de referência do bloco: {{ data_fundamentos or "N/A" }}. Cada indicador mostra a fonte e a data do próprio campo.</p>
+    <div class="tabela-rolagem">
+      <table>
+        <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">Valor</th><th scope="col">Fonte</th><th scope="col">Data de referência</th></tr></thead>
+        <tbody>
+          {% for linha in linhas_demonstracoes %}
+            <tr>
+              <td>{{ linha.rotulo }}</td>
+              <td class="num">
+                {% if linha.motivo %}<span class="na" title="{{ linha.motivo }}">N/A</span>{% else %}{{ linha.valor }}{% endif %}
+              </td>
+              <td>{{ linha.fonte or "N/A" }}</td>
+              <td>{{ linha.data_ref or "N/A" }}</td>
+            </tr>
+          {% endfor %}
+          <tr>
+            <td>Origem do P/VP</td>
+            <td class="num">{{ indicadores.pvp_origem or "N/A" }}</td>
+            <td>{{ indicadores.pvp_origem or "N/A" }}</td>
+            <td>{{ data_fundamentos or "N/A" }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% if indicadores.ebitda_derivado %}
+      <p class="aviso">O EBITDA é derivado de EV/EBITDA e valor da firma; não é o EBITDA publicado pela empresa.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="bloco-proventos">
+    <h2 id="bloco-proventos">Proventos</h2>
+    <p class="ajuda">Data de referência: {{ data_provento or "N/A" }}.</p>
+    <div class="tabela-rolagem">
+      <table>
+        <thead><tr><th scope="col">Indicador</th><th scope="col" class="num">Valor</th><th scope="col">Fonte</th><th scope="col">Data de referência</th></tr></thead>
+        <tbody>
+          {% for linha in linhas_proventos %}
+            <tr>
+              <td>{{ linha.rotulo }}</td>
+              <td class="num">
+                {% if linha.motivo %}<span class="na" title="{{ linha.motivo }}">N/A</span>{% elif linha.destaque %}<strong class="dy">{{ linha.valor }}</strong>{% else %}{{ linha.valor }}{% endif %}
+              </td>
+              <td>{{ linha.fonte or "N/A" }}</td>
+              <td>{{ linha.data_ref or "N/A" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="bloco-consenso">
+    <h2 id="bloco-consenso">Consenso do mercado (MSN)</h2>
+    {% if not consenso.disponivel %}
+      <p class="na" title="{{ consenso.motivo }}">N/A — {{ consenso.motivo }}</p>
+    {% else %}
+      {% for aviso in consenso.avisos %}
+        <p class="aviso" role="status">{{ aviso }}</p>
+      {% endfor %}
+      <p class="ajuda">{{ consenso.total_texto }} analista(s) · atualizado em {{ consenso.data_ref or "N/A" }}</p>
+      <div class="cartoes">
+        <div class="cartao">
+          <span class="cartao-rotulo">Compra</span>
+          <strong class="cartao-numero">{{ consenso.compra_texto }} ({{ consenso.compra_pct_texto }})</strong>
+        </div>
+        <div class="cartao">
+          <span class="cartao-rotulo">Neutro</span>
+          <strong class="cartao-numero">{{ consenso.neutro_texto }} ({{ consenso.neutro_pct_texto }})</strong>
+        </div>
+        <div class="cartao">
+          <span class="cartao-rotulo">Venda</span>
+          <strong class="cartao-numero">{{ consenso.venda_texto }} ({{ consenso.venda_pct_texto }})</strong>
+        </div>
+        <div class="cartao"{% if consenso.alvo_classe_duvidosa %} title="O alvo do MSN pode ser da unit ou de outra classe do papel"{% endif %}>
+          <span class="cartao-rotulo">Alvo médio</span>
+          <strong class="cartao-numero">{{ consenso.alvo_medio_texto }}</strong>
+          <span class="cartao-detalhe">mediana {{ consenso.alvo_mediana_texto }}</span>
+        </div>
+      </div>
+      <p>
+        {% if consenso.recomendacao %}<strong>{{ consenso.recomendacao }}</strong> · {% endif %}
+        Faixa dos alvos: <span class="num">{{ consenso.faixa }}</span>.
+      </p>
+      <p>
+        Upside até o alvo médio:
+        {% if consenso.alvo_classe_duvidosa %}
+          <strong class="status-nao-atende">{{ consenso.upside_texto }}</strong>
+        {% else %}
+          <strong class="{{ 'status-atende' if consenso.upside_positivo else 'status-nao-atende' }}">{{ consenso.upside_texto }}</strong>
+        {% endif %}
+      </p>
+    {% endif %}
+  </section>
+
+{% elif aba == "lista" %}
+  <section aria-labelledby="porque">
+    <h2 id="porque">Por que está na lista</h2>
+    <p class="ajuda">Cada estratégia mostra os critérios atendidos, não atendidos e indisponíveis, sempre com o texto do motivo.</p>
+    {% for p in por_que %}
+      <article class="bloco">
+        <h3>{{ p.nome }}</h3>
+        {% if not p.avaliado %}
+          <p class="ajuda">Este ativo não foi avaliado por esta estratégia na última geração.</p>
+        {% elif p.fora_da_lista %}
+          <p><strong>Fora da lista:</strong> {{ p.motivo_fora or "inelegível" }}</p>
+          {% if p.aprovados or p.reprovados or p.indisponiveis %}
+            <ul class="criterios">
+              {% for chave in p.aprovados %}<li>atende · {{ chave.replace("_", " ") }}: {{ p.motivos.get(chave, "motivo não registrado") }}</li>{% endfor %}
+              {% for chave in p.reprovados %}<li>não atende · {{ chave.replace("_", " ") }}: {{ p.motivos.get(chave, "motivo não registrado") }}</li>{% endfor %}
+              {% for chave in p.indisponiveis %}<li>indisponível · {{ chave.replace("_", " ") }}: {{ p.motivos.get(chave, "sem dado na fonte") }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        {% else %}
+          {% set d = p.get("dados") or {} %}
+          <p>
+            <strong>Posição {{ p.posicao }}</strong>
+            {% if p.estrategia == "regularidade_proventos" %}
+              · regularidade {{ formato.percentual(d.get("regularidade_24m_pct"), casas=1) or "N/A" }}
+              ({{ formato.inteiro(d.get("regularidade_24m_meses")) or "N/A" }} de 24 meses,
+              {{ formato.inteiro(d.get("proventos_24m_qtd")) or "N/A" }} pagamentos)
+            {% elif p.pontuacao is not none %} · pontuação {{ formato.numero(p.pontuacao) }}{% endif %}
+            {% if p.destaque %} · {{ p.destaque }}{% endif %}
+          </p>
+          {% if p.estrategia == "regularidade_proventos" %}
+            <p class="ajuda">
+              Meses mais recorrentes:
+              {% if d.get("proventos_24m_tipicos") %}{{ d.get("proventos_24m_tipicos")|join(", ") }}{% else %}sem recorrência anual — {{ d.get("proventos_24m_observacao") or "sem provento nos últimos 24 meses" }}{% endif %}
+            </p>
+          {% endif %}
+          <h4>Critérios atendidos ({{ p.aprovados|length }})</h4>
+          <ul class="criterios">
+            {% for chave in p.aprovados %}<li>{{ chave.replace("_", " ") }}: {{ p.motivos.get(chave, "motivo não registrado") }}</li>{% else %}<li class="ajuda">nenhum</li>{% endfor %}
+          </ul>
+          <h4>Critérios não atendidos ({{ p.reprovados|length }})</h4>
+          <ul class="criterios">
+            {% for chave in p.reprovados %}<li>{{ chave.replace("_", " ") }}: {{ p.motivos.get(chave, "motivo não registrado") }}</li>{% else %}<li class="ajuda">nenhum</li>{% endfor %}
+          </ul>
+          <h4>Indisponíveis ({{ p.indisponiveis|length }})</h4>
+          <ul class="criterios">
+            {% for chave in p.indisponiveis %}<li>{{ chave.replace("_", " ") }}: {{ p.motivos.get(chave, "sem dado na fonte") }}</li>{% else %}<li class="ajuda">nenhum</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+{% elif aba == "tecnico" %}
+  <section aria-labelledby="tecnico">
+    <h2 id="tecnico">Técnico</h2>
+    <form method="get" action="/ativos/{{ ticker }}/tecnico" class="filtros">
+      <div class="campo">
+        <label for="periodo">Periodicidade do gráfico e das médias</label>
+        <select id="periodo" name="periodo">
+          <option value="diario" {% if periodo == "diario" %}selected{% endif %}>Diário — SMA 50/150/200 de dias</option>
+          <option value="semanal" {% if periodo == "semanal" %}selected{% endif %}>Semanal — SMA 9/21/100/150 de semanas</option>
+          <option value="mensal" {% if periodo == "mensal" %}selected{% endif %}>Mensal — SMA 9/21/50 de meses</option>
+        </select>
+      </div>
+      <div class="acoes"><button type="submit">Trocar periodicidade</button></div>
+    </form>
+
+    {% if tecnico.sem_dados %}
+      <p class="aviso">Sem histórico de cotações para desenhar o gráfico.</p>
+    {% else %}
+      <div id="grafico-preco" class="grafico" role="img" aria-label="Gráfico de candles e volume de {{ ticker }} no período {{ periodo }}"></div>
+      <p class="ajuda">A periodicidade selecionada é {{ periodo }}; médias e rótulos abaixo usam a mesma unidade do gráfico. As bandas de Bollinger usam 20 períodos da periodicidade escolhida e 2 desvios-padrão.</p>
+
+      <h3>Médias móveis ({{ periodo }})</h3>
+      <div class="tabela-rolagem">
+        <table>
+          <thead><tr><th scope="col">Média</th><th scope="col" class="num">Último valor</th></tr></thead>
+          <tbody>
+            {% for media in tecnico.medias %}
+              <tr>
+                <td>{{ media.rotulo }}</td>
+                <td class="num">
+                  {% if media.motivo %}<span class="na" title="{{ media.motivo }}">N/A</span>{% else %}{{ media.valor }}{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Volume</h3>
+      <p>Último volume: <span class="num">{{ tecnico.volume_ultimo or "N/A" }}</span> · média de 50 dias: <span class="num">{{ tecnico.volume_medio or "N/A" }}</span>.</p>
+
+      <h3>Trend template (diário)</h3>
+      {% if tecnico.trend_quase_todos %}
+        <p class="aviso">Atende 6 dos 7 critérios. {{ tecnico.trend_motivo_falta }}</p>
+      {% endif %}
+      <div class="tabela-rolagem">
+        <table>
+          <thead><tr><th scope="col">Critério</th><th scope="col">Situação</th><th scope="col" class="num">Valor</th><th scope="col">Regra</th></tr></thead>
+          <tbody>
+            {% for item in tecnico.trend %}
+              <tr>
+                <td>{{ item.rotulo }}</td>
+                <td><span class="status status-{{ item.status|replace(' ', '-') }}">{{ item.status }}</span></td>
+                <td class="num">
+                  {% if item.motivo %}<span class="na" title="{{ item.motivo }}">N/A</span>{% else %}{{ item.valor }}{% endif %}
+                </td>
+                <td>{{ item.regra }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Força relativa contra ^BVSP</h3>
+      {% if tecnico.erro_relativa %}
+        <p class="aviso">Indisponível: {{ tecnico.erro_relativa }}</p>
+      {% else %}
+        <div class="tabela-rolagem">
+          <table>
+            <thead><tr><th scope="col">Janela</th><th scope="col" class="num">{{ ticker }}</th><th scope="col" class="num">^BVSP</th><th scope="col" class="num">Força relativa</th></tr></thead>
+            <tbody>
+              {% for linha in tecnico.forca_relativa %}
+                <tr>
+                  <td>{{ linha.rotulo }}</td>
+                  <td class="num">{{ linha.ativo or "N/A" }}</td>
+                  <td class="num">{{ linha.benchmark or "N/A" }}</td>
+                  <td class="num">{{ linha.rs or "N/A" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      <h3>Sinais</h3>
+      <div class="tabela-rolagem">
+        <table>
+          <thead><tr><th scope="col">Sinal</th><th scope="col">Situação</th><th scope="col">Motivo</th></tr></thead>
+          <tbody>
+            {% for sinal in tecnico.sinais %}
+              <tr>
+                <td>{{ sinal.nome }}</td>
+                <td><span class="status status-{{ sinal.status|replace(' ', '-') }}">{{ sinal.status }}</span></td>
+                <td>{{ sinal.motivo }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </section>
+
+{% elif aba == "historico" %}
+  <section aria-labelledby="historico">
+    <h2 id="historico">Histórico de cotações</h2>
+    <p class="ajuda">{{ historico.total }} linha(s). <a href="/api/ativos/{{ ticker }}/exportacao">Baixar CSV</a>.</p>
+    <div class="tabela-rolagem">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Data</th>
+            <th scope="col" class="num">Abertura</th>
+            <th scope="col" class="num">Máxima</th>
+            <th scope="col" class="num">Mínima</th>
+            <th scope="col" class="num">Fechamento</th>
+            <th scope="col" class="num">Ajustado</th>
+            <th scope="col" class="num">Volume</th>
+            <th scope="col">Fonte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in historico.linhas %}
+            <tr>
+              <td>{{ formato.data_br(linha.data) }}</td>
+              <td class="num">{{ formato.moeda(linha.abertura) or "N/A" }}</td>
+              <td class="num">{{ formato.moeda(linha.maxima) or "N/A" }}</td>
+              <td class="num">{{ formato.moeda(linha.minima) or "N/A" }}</td>
+              <td class="num">{{ formato.moeda(linha.fechamento) or "N/A" }}</td>
+              <td class="num">{{ formato.moeda(linha.fechamento_ajustado) or "N/A" }}</td>
+              <td class="num">{{ formato.inteiro(linha.volume) or "N/A" }}</td>
+              <td>{{ linha.fonte or "N/A" }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="8">Sem cotações registradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <nav class="paginacao" aria-label="Paginação do histórico">
+      {% if historico.pagina > 1 %}
+        <a href="/ativos/{{ ticker }}?aba=historico&pagina={{ historico.pagina - 1 }}" rel="prev">← Anterior</a>
+      {% endif %}
+      <span>Página {{ historico.pagina }} de {{ historico.paginas }}</span>
+      {% if historico.pagina < historico.paginas %}
+        <a href="/ativos/{{ ticker }}?aba=historico&pagina={{ historico.pagina + 1 }}" rel="next">Próxima →</a>
+      {% endif %}
+    </nav>
+  </section>
+
+{% elif aba == "comparar" %}
+  <section aria-labelledby="comparar-ativo">
+    <h2 id="comparar-ativo">Comparar séries normalizadas</h2>
+    <form method="get" action="/ativos/{{ ticker }}" class="filtros">
+      <input type="hidden" name="aba" value="comparar">
+      <div class="campo">
+        <label for="comparar">Comparar com (ticker)</label>
+        <input id="comparar" name="comparar" value="{{ comparar or '' }}" placeholder="VALE3">
+      </div>
+      <div class="acoes"><button type="submit">Comparar</button></div>
+    </form>
+    {% if comparar and not comparacao %}
+      <p class="aviso">Ticker {{ comparar }} não encontrado no banco.</p>
+    {% elif comparacao %}
+      <p class="ajuda">As duas séries começam em 100 na primeira data em comum. {{ ticker }} contra {{ comparacao.outro }}.</p>
+      <div id="grafico-preco" class="grafico" role="img" aria-label="Comparação normalizada em 100 entre {{ ticker }} e {{ comparacao.outro }}"></div>
+      <p><a href="/comparar?tickers={{ ticker }},{{ comparacao.outro }}">Comparar todos os indicadores lado a lado</a></p>
+    {% else %}
+      <p class="ajuda">Informe outro ticker para sobrepor as séries normalizadas em 100.</p>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if aba == "tecnico" and tecnico and not tecnico.sem_dados %}
+    <script type="application/json" id="dados-grafico">{{ tecnico.grafico|tojson }}</script>
+    <script src="/static/vendor/lightweight-charts.js" defer></script>
+    <script src="/static/grafico.js" defer></script>
+  {% elif aba == "comparar" and comparacao %}
+    <script type="application/json" id="dados-grafico">{{ comparacao|tojson }}</script>
+    <script src="/static/vendor/lightweight-charts.js" defer></script>
+    <script src="/static/grafico.js" defer></script>
+  {% endif %}
+{% endblock %}

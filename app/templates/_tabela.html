@@ -1,0 +1,67 @@
+{% macro celula(c) -%}
+  {%- if c.link -%}
+    <a href="{{ c.link }}"{% if c.titulo %} title="{{ c.titulo }}"{% endif %}>{{ c.texto }}</a>
+  {%- elif c.motivo -%}
+    <span class="na" title="{{ c.motivo }}">{{ c.texto }}</span>
+  {%- elif c.destaque -%}
+    <strong class="dy"{% if c.titulo %} title="{{ c.titulo }}"{% endif %}>{{ c.texto }}</strong>
+  {%- elif c.titulo -%}
+    <span title="{{ c.titulo }}">{{ c.texto }}</span>
+  {%- else -%}
+    {{ c.texto }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro dy(valor, motivo="sem provento por ação nos últimos 12 meses") -%}
+  {%- set texto = formato.percentual(valor) -%}
+  {%- if texto -%}
+    <strong class="dy">{{ texto }}</strong>
+  {%- else -%}
+    <span class="na" title="{{ motivo }}">N/A</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro numerica(tipo) -%}
+  {%- if tipo in ("numero", "inteiro", "moeda", "percentual") -%}num{%- endif -%}
+{%- endmacro %}
+
+{% macro tabela(colunas, linhas, classe="") %}
+<div class="tabela-rolagem">
+  <table class="{{ classe }}">
+    <thead>
+      <tr>
+        {% for coluna in colunas %}
+          <th scope="col"
+              class="{{ numerica(coluna.tipo) }}"
+              {% if coluna.ordenado %}aria-sort="{{ coluna.direcao }}"{% endif %}>
+            {% if coluna.link %}
+              <a href="{{ coluna.link }}">{{ coluna.rotulo }}{% if coluna.ordenado %} {{ "▲" if coluna.direcao == "asc" else "▼" }}{% endif %}</a>
+            {% else %}
+              {{ coluna.rotulo }}
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for linha in linhas %}
+        <tr>
+          {% for coluna in colunas %}
+            <td class="{{ numerica(coluna.tipo) }}">{{ celula(linha[coluna.chave]) }}</td>
+          {% endfor %}
+        </tr>
+      {% else %}
+        <tr><td colspan="{{ colunas|length }}">Sem itens para exibir.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro valor_com_motivo(valor, motivo, classe="num") -%}
+  {%- if motivo -%}
+    <span class="na" title="{{ motivo }}">N/A</span>
+  {%- else -%}
+    {{ valor }}
+  {%- endif -%}
+{%- endmacro %}

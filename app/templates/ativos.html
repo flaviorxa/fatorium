@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import "_tabela.html" as t %}
+{% block titulo %}Ativos — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Ativos</h1>
+<p class="ajuda">{{ dados.total }} ativo(s) encontrado(s). Paginação de {{ dados.por_pagina }} por página.</p>
+
+<form method="get" action="/ativos" class="filtros">
+  <div class="campo">
+    <label for="classe">Classe</label>
+    <select id="classe" name="classe">
+      <option value="">Todas</option>
+      {% for opcao in opcoes.classes %}
+        <option value="{{ opcao }}" {% if filtros.classe == opcao %}selected{% endif %}>{{ nome_classe(opcao) }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="setor">Setor</label>
+    <select id="setor" name="setor">
+      <option value="">Todos</option>
+      {% for opcao in opcoes.setores %}
+        <option value="{{ opcao }}" {% if filtros.setor == opcao %}selected{% endif %}>{{ opcao }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="busca">Buscar por ticker ou nome</label>
+    <input id="busca" name="busca" value="{{ filtros.busca or '' }}" placeholder="PETR4">
+  </div>
+  <div class="acoes">
+    <button type="submit">Filtrar</button>
+    <a href="/ativos">Limpar</a>
+  </div>
+</form>
+
+{{ t.tabela(colunas, linhas) }}
+
+<nav class="paginacao" aria-label="Paginação de ativos">
+  {% if link_anterior %}<a href="{{ link_anterior }}" rel="prev">← Anterior</a>{% endif %}
+  <span>Página {{ dados.pagina }} de {{ dados.paginas }}</span>
+  {% if link_proxima %}<a href="{{ link_proxima }}" rel="next">Próxima →</a>{% endif %}
+</nav>
+{% endblock %}

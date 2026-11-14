@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% import "_tabela.html" as t %}
+{% block titulo %}Dashboard — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Dashboard</h1>
+<p class="ajuda">Visão geral da última coleta e dos rankings mais recentes. Todos os números têm link para a lista correspondente.</p>
+
+<section aria-labelledby="cartoes" class="cartoes">
+  <h2 id="cartoes" class="oculto">Indicadores gerais</h2>
+  <a class="cartao" href="/ativos">
+    <span class="cartao-rotulo">Ativos monitorados</span>
+    <strong class="cartao-numero">{{ resumo.ativos }}</strong>
+  </a>
+  <a class="cartao" href="/ativos?ordem=ultima_data&dir=desc">
+    <span class="cartao-rotulo">Ativos com dados de hoje</span>
+    <strong class="cartao-numero">{{ resumo.com_dados_hoje }}</strong>
+    <span class="cartao-detalhe">{{ formato.data_br(resumo.hoje) }}</span>
+  </a>
+  <a class="cartao" href="/fontes">
+    {% if resumo.ultima_coleta and resumo.ultima_coleta.status == "em_andamento" %}
+      <span class="cartao-rotulo">Coleta em andamento</span>
+      <strong class="cartao-numero">#{{ resumo.ultima_coleta.id }}</strong>
+      <span class="cartao-detalhe">em andamento desde {{ formato.hora_br(resumo.ultima_coleta.iniciado_em) or "início desconhecido" }}</span>
+    {% elif resumo.ultima_coleta %}
+      <span class="cartao-rotulo">Última coleta</span>
+      <strong class="cartao-numero">#{{ resumo.ultima_coleta.id }}</strong>
+      <span class="cartao-detalhe">{{ resumo.ultima_coleta.status or "sem status" }} · {{ formato.data_br(resumo.ultima_coleta.terminado_em or resumo.ultima_coleta.iniciado_em) }}</span>
+    {% else %}
+      <span class="cartao-rotulo">Última coleta</span>
+      <strong class="cartao-numero">N/A</strong>
+      <span class="cartao-detalhe">nenhuma coleta registrada</span>
+    {% endif %}
+  </a>
+  <a class="cartao" href="/fontes">
+    <span class="cartao-rotulo">Falhas nas últimas 24 h</span>
+    <strong class="cartao-numero">{{ resumo.falhas_24h_distintos }}</strong>
+    <span class="cartao-detalhe">{{ resumo.falhas_24h_registros }} registros · {{ resumo.falhas_24h_distintos }} ativos/fontes distintos</span>
+  </a>
+</section>
+
+<section aria-labelledby="rankings-titulo">
+  <h2 id="rankings-titulo">Primeiras posições por ranking</h2>
+  {% for secao in rankings %}
+    <article class="bloco">
+      <div class="bloco-cabecalho">
+        <h3><a href="/rankings/{{ secao.estrategia }}">{{ secao.nome }}</a></h3>
+        <p class="ajuda">Gerado em {{ formato.data_br(secao.gerado_em) }}</p>
+      </div>
+      {% if secao.estrategia == "upside_consenso" %}
+        <div class="tabela-rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="num">Pos.</th>
+                <th scope="col">Ticker</th>
+                <th scope="col" class="num">Preço</th>
+                <th scope="col" class="num">Alvo médio</th>
+                <th scope="col" class="num">Upside</th>
+                <th scope="col" class="num">DY</th>
+                <th scope="col" class="num">Analistas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in secao.itens %}
+                {% set linha = item.linha_upside %}
+                {% set a = linha.analistas %}
+                <tr>
+                  <td class="num">{{ item.posicao }}</td>
+                  <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+                  <td class="num">{{ t.celula(formato.celula(linha.preco, "moeda", motivo="preço ausente na fonte")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(linha.alvo, "moeda", motivo="alvo médio ausente na fonte")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(linha.upside_pct, "percentual", casas=1, sinal=True, motivo="upside não calculado")) }}</td>
+                  <td class="num">{{ t.dy((item.get("indicadores") or {}).get("dy")) }}</td>
+                  <td class="num">{% if a.compra is not none and a.neutro is not none and a.venda is not none and a.total is not none %}{{ a.compra|int }}C/{{ a.neutro|int }}N/{{ a.venda|int }}V · {{ a.total|int }}{% else %}N/A{% endif %}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="7">Ranking sem itens elegíveis.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="ajuda">
+          preço-alvo é opinião de analistas (MSN), não cálculo do sistema{% if secao.consenso_data %} · consenso de {{ secao.consenso_data }}{% endif %}
+        </p>
+      {% elif secao.estrategia == "regularidade_proventos" %}
+        <div class="tabela-rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="num">Pos.</th>
+                <th scope="col">Ticker</th>
+                <th scope="col" class="num">Regularidade (24m)</th>
+                <th scope="col" class="num">Meses com provento (de 24)</th>
+                <th scope="col" class="num">Pagamentos em 24m</th>
+                <th scope="col" class="num">DY</th>
+                <th scope="col">Observação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in secao.itens %}
+                {% set dados = item.get("dados", {}) %}
+                <tr>
+                  <td class="num">{{ item.posicao }}</td>
+                  <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+                  <td class="num">{{ t.celula(formato.celula(dados.get("regularidade_24m_pct"), "percentual", motivo="sem provento nos últimos 24 meses")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(dados.get("regularidade_24m_meses"), "inteiro", motivo="sem provento nos últimos 24 meses")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(dados.get("proventos_24m_qtd"), "inteiro", motivo="sem provento nos últimos 24 meses")) }}</td>
+                  <td class="num">{{ t.dy(dados.get("dy") or (item.get("indicadores") or {}).get("dy")) }}</td>
+                  <td>{{ dados.get("proventos_24m_observacao") or "N/A" }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="7">Ranking sem itens elegíveis.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="ajuda">regularidade = meses com pagamento nos últimos 24; a observação mostra os meses pagos nos dois anos da janela</p>
+      {% elif secao.estrategia == "fiis_ltm" %}
+        <div class="tabela-rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="num">Pos.</th>
+                <th scope="col">Ticker</th>
+                <th scope="col" class="num">Retorno 12m</th>
+                <th scope="col" class="num">Cota 12m</th>
+                <th scope="col" class="num">Proventos 12m</th>
+                <th scope="col" class="num">DY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in secao.itens %}
+                {% set dados = item.get("dados", {}) %}
+                <tr>
+                  <td class="num">{{ item.posicao }}</td>
+                  <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+                  <td class="num">{{ t.celula(formato.celula(dados.get("retorno_total_12m_pct"), "percentual", sinal=True, motivo="sem cotação de 12 meses atrás")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(dados.get("valorizacao_12m_pct"), "percentual", sinal=True, motivo="sem cotação de 12 meses atrás")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(dados.get("proventos_12m_pct"), "percentual", sinal=True, motivo="sem provento nos últimos 12 meses")) }}</td>
+                  <td class="num">{{ t.dy(dados.get("dy")) }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="6">Ranking sem itens elegíveis.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="tabela-rolagem">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="num">Pos.</th>
+                <th scope="col">Ticker</th>
+                <th scope="col" class="num">Pontuação</th>
+                <th scope="col" class="num">P/L</th>
+                <th scope="col" class="num">P/VP</th>
+                <th scope="col" class="num">DY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in secao.itens %}
+                {% set indicadores = item.get("indicadores", {}) %}
+                <tr>
+                  <td class="num">{{ item.posicao }}</td>
+                  <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+                  <td class="num">{{ t.celula(formato.celula(item.pontuacao, "numero", motivo="pontuação não calculada")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(indicadores.get("pl"), "numero", motivo="LPA menor ou igual a zero, ou ausente")) }}</td>
+                  <td class="num">{{ t.celula(formato.celula(indicadores.get("pvp"), "numero", motivo="VPA ausente ou não positivo")) }}</td>
+                  <td class="num">{{ t.dy(indicadores.get("dy")) }}</td>
+                </tr>
+              {% else %}
+                <tr><td colspan="6">Ranking sem itens elegíveis.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+      <p><a href="/rankings/{{ secao.estrategia }}">Ver ranking completo</a></p>
+    </article>
+  {% else %}
+    <p>Nenhum ranking gerado ainda.</p>
+  {% endfor %}
+</section>
+
+<section aria-labelledby="consolidado-titulo">
+  <h2 id="consolidado-titulo">Ranking consolidado — melhores no momento</h2>
+  <p class="ajuda">
+    Média dos percentis de posição nas listas em que o ativo aparece
+    (1,0 = primeiro de cada lista); entram apenas ativos presentes em pelo menos
+    {{ consolidado_min_listas }} listas.
+  </p>
+  {% if consolidado|length < 3 %}
+    <p class="aviso">
+      O consolidado tem apenas {{ consolidado|length }} ativo(s) com
+      {{ consolidado_min_listas }} ou mais listas; o mínimo esperado para o bloco é 3.
+    </p>
+  {% endif %}
+  <div class="tabela-rolagem">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col" class="num">#</th>
+          <th scope="col">Ticker</th>
+          <th scope="col" class="num">Listas</th>
+          <th scope="col" class="num">Pontuação</th>
+          <th scope="col">Onde aparece</th>
+          <th scope="col" class="num">Preço</th>
+          <th scope="col" class="num">P/L</th>
+          <th scope="col" class="num">DY</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in consolidado %}
+          {% set indicadores = item.get("indicadores", {}) %}
+          <tr>
+            <td class="num">{{ loop.index }}</td>
+            <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+            <td class="num">{{ item.listas }}</td>
+            <td class="num">{{ formato.numero(item.pontuacao) or "N/A" }}</td>
+            <td>
+              {% for aparecimento in item.onde_aparece %}
+                <a href="{{ aparecimento.link }}">{{ aparecimento.nome }} {{ aparecimento.posicao }}º</a>{% if not loop.last %} · {% endif %}
+              {% endfor %}
+            </td>
+            <td class="num">{{ t.celula(formato.celula(item.preco, "moeda", motivo="sem cotação na fonte")) }}</td>
+            <td class="num">{{ t.celula(formato.celula(indicadores.get("pl"), "numero", motivo="LPA menor ou igual a zero, ou ausente")) }}</td>
+            <td class="num">{{ t.dy(indicadores.get("dy")) }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8">Nenhum ativo atende à regra de listas mínimas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p><a href="/rankings/consolidado">Ver todos</a></p>
+</section>
+
+<section aria-labelledby="alertas-titulo">
+  <h2 id="alertas-titulo">Últimos alertas</h2>
+  {% if alertas %}
+    <ul class="lista-alertas">
+      {% for alerta in alertas %}
+        <li>
+          <strong>{{ alerta.fonte }}</strong>
+          {% if alerta.ticker %}· {{ alerta.ticker }}{% endif %}
+          {% if alerta.etapa %}· {{ alerta.etapa }}{% endif %}
+          <span class="ajuda">— {{ formato.data_br(alerta.quando) }}</span>
+          <p>{{ alerta.erro }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+    <p><a href="/fontes">Ver status das fontes</a></p>
+  {% else %}
+    <p>Nenhuma falha registrada.</p>
+  {% endif %}
+</section>
+{% endblock %}

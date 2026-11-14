@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block titulo %}Ativos cadastrados — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Ativos cadastrados</h1>
+{% if aviso %}
+  <p class="aviso" role="status">{{ aviso }}</p>
+{% endif %}
+
+<section aria-labelledby="resumo-classes">
+  <h2 id="resumo-classes">Resumo por classe</h2>
+  <div class="cartoes">
+    {% for cartao in cartoes %}
+      <div class="cartao">
+        <span class="cartao-rotulo">{{ cartao.nome }}</span>
+        <strong class="cartao-numero">{{ cartao.total }}</strong>
+      </div>
+    {% endfor %}
+    <div class="cartao">
+      <span class="cartao-rotulo">Total na lista</span>
+      <strong class="cartao-numero">{{ total_lista }}</strong>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="incluir-ativo">
+  <h2 id="incluir-ativo">Incluir ativo</h2>
+  <p class="ajuda">
+    Incluir na lista oficial também dispara a coleta de preços daquele ticker
+    em segundo plano.
+  </p>
+  <form method="post" action="/universo/incluir" class="filtros">
+    <div class="campo">
+      <label for="ticker">Ticker</label>
+      <input id="ticker" name="ticker" placeholder="PETR4" required>
+    </div>
+    <div class="campo">
+      <label for="classe">Classe</label>
+      <select id="classe" name="classe" required>
+        {% for opcao in opcoes_classes %}
+          <option value="{{ opcao.chave }}">{{ opcao.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="acoes"><button type="submit">Incluir</button></div>
+  </form>
+</section>
+
+<section aria-labelledby="lista-ativos">
+  <h2 id="lista-ativos">Lista de ativos</h2>
+
+  <form method="get" action="/universo" class="filtros">
+    <div class="campo">
+      <label for="filtro-classe">Classe</label>
+      <select id="filtro-classe" name="classe">
+        <option value="">Todas</option>
+        {% for opcao in opcoes_classes %}
+          <option value="{{ opcao.chave }}" {% if filtros.classe == opcao.chave %}selected{% endif %}>{{ opcao.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="filtro-status">Status</label>
+      <select id="filtro-status" name="status">
+        <option value="todos" {% if filtros.status == "todos" %}selected{% endif %}>Todos</option>
+        <option value="na_lista" {% if filtros.status == "na_lista" %}selected{% endif %}>Na lista</option>
+        <option value="fora" {% if filtros.status == "fora" %}selected{% endif %}>Fora da lista</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label for="filtro-busca">Buscar por ticker ou nome</label>
+      <input id="filtro-busca" name="busca" value="{{ filtros.busca or '' }}" placeholder="PETR4">
+    </div>
+    <div class="acoes">
+      <button type="submit">Filtrar</button>
+      <a href="/universo">Limpar</a>
+    </div>
+  </form>
+
+  <div class="tabela-rolagem">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Ticker</th>
+          <th scope="col">Classe</th>
+          <th scope="col">Setor</th>
+          <th scope="col">Última cotação</th>
+          <th scope="col" class="num">Preço</th>
+          <th scope="col">Status</th>
+          <th scope="col">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ativo in ativos %}
+          <tr>
+            <td>{{ ativo.ticker }}</td>
+            <td>{{ ativo.classe_nome }}</td>
+            <td>{{ ativo.setor or "N/A" }}</td>
+            <td>{{ formato.data_br(ativo.ultima_data) or "N/A" }}</td>
+            <td class="num">{{ formato.moeda(ativo.ultimo_fechamento) or "N/A" }}</td>
+            <td>
+              {% if ativo.na_lista %}
+                <span class="status-na-lista">Na lista</span>
+              {% else %}
+                <span class="status-fora">Fora da lista</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if ativo.na_lista %}
+                <form method="post" action="/universo/excluir" class="acao-linha"
+                      data-confirmar="Excluir {{ ativo.ticker }} da lista?">
+                  <input type="hidden" name="ticker" value="{{ ativo.ticker }}">
+                  <button type="submit">Excluir</button>
+                </form>
+              {% elif ativo.pode_reincluir %}
+                <form method="post" action="/universo/reincluir" class="acao-linha">
+                  <input type="hidden" name="ticker" value="{{ ativo.ticker }}">
+                  <input type="hidden" name="classe" value="{{ ativo.classe }}">
+                  <button type="submit">Reincluir</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7">Nenhum ativo encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/confirmar.js?v={{ versao_estatica() }}" defer></script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block titulo %}Fontes — InvestIQ{% endblock %}
+{% block extra_head %}
+  {% if auto_refresh %}<meta http-equiv="refresh" content="{{ auto_refresh }}">{% endif %}
+{% endblock %}
+
+{% block conteudo %}
+<h1>Fontes</h1>
+{% if aviso %}
+  <p class="aviso" role="status">{{ aviso }}</p>
+{% endif %}
+
+<section aria-labelledby="status-fontes">
+  <h2 id="status-fontes">Status das fontes</h2>
+  <div class="tabela-rolagem">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Fonte</th>
+          <th scope="col">Última coleta</th>
+          <th scope="col">Última falha</th>
+          <th scope="col" class="num">Registros</th>
+          <th scope="col" class="num">Falhas</th>
+          <th scope="col">Limitação conhecida</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fonte in fontes %}
+          <tr>
+            <td><strong>{{ fonte.fonte }}</strong></td>
+            <td>{{ formato.data_br(fonte.ultima_coleta) or "N/A" }}</td>
+            <td>{{ formato.data_br(fonte.ultima_falha) or "N/A" }}</td>
+            <td class="num">{{ fonte.registros }}</td>
+            <td class="num">{{ fonte.falhas }}</td>
+            <td>{{ fonte.limitacao }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ajuda">A versão JSON deste status está em <a href="/api/fontes">/api/fontes</a>.</p>
+</section>
+
+<section aria-labelledby="mapeamento-fii">
+  <h2 id="mapeamento-fii">Mapeamento de FIIs</h2>
+  <p>{{ mapeamento.texto }}</p>
+  <p class="ajuda">{{ mapeamento.entradas }} FII(s) com CNPJ mapeado · {{ mapeamento.pendentes }} pendente(s).</p>
+  {% if mapeamento.tickers_pendentes %}
+    <ul>
+      {% for ticker in mapeamento.tickers_pendentes %}
+        <li>{{ ticker }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+
+<section aria-labelledby="agendamento">
+  <h2 id="agendamento">Coleta automática</h2>
+  <form method="post" action="/fontes/agenda" class="filtros">
+    <div class="campo">
+      <label for="frequencia">Frequência</label>
+      <select id="frequencia" name="frequencia">
+        <option value="dias_uteis"{% if agendamento.frequencia == "dias_uteis" %} selected{% endif %}>Dias úteis (segunda a sexta)</option>
+        <option value="semanal"{% if agendamento.frequencia == "semanal" %} selected{% endif %}>Semanal (segunda-feira)</option>
+        <option value="desligado"{% if agendamento.frequencia == "desligado" %} selected{% endif %}>Desligada</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label for="horario">Horário de início</label>
+      <input id="horario" name="horario" type="time" step="60" value="{{ agendamento.horario }}">
+    </div>
+    <div class="acoes"><button type="submit">Salvar agendamento</button></div>
+  </form>
+  <p class="ajuda">O horário define o início da cadeia: cotações, fundamentos, preços-alvo e rankings rodam em sequência nos 70 minutos seguintes. Horário entre 00:00 e 22:45.</p>
+  <p class="ajuda">
+    {% if proxima_coleta %}Próxima coleta automática: {{ formato.data_br(proxima_coleta) }} às {{ formato.hora_br(proxima_coleta) }}{% else %}Próxima coleta automática: desligada{% endif %}
+  </p>
+</section>
+
+<section aria-labelledby="coleta">
+  <h2 id="coleta">Coleta manual</h2>
+  {% if coleta %}
+    {% if coleta.status == "em_andamento" %}
+      <p class="aviso" role="status">
+        Coleta #{{ coleta.id }} em andamento desde
+        {{ formato.hora_br(coleta.iniciado_em) or "início desconhecido" }} ·
+        a página se atualiza a cada {{ auto_refresh }} s.
+      </p>
+    {% else %}
+      <p class="ajuda">
+        Coleta #{{ coleta.id }} concluída · {{ coleta.status or "sem status" }} · {% if resumo_coleta and resumo_coleta.ok is defined and resumo_coleta.falhas is defined and resumo_coleta.total is defined %}{{ resumo_coleta.ok }} ok · {{ resumo_coleta.falhas }} falhas de {{ resumo_coleta.total }} · {% else %}sem resumo · {% endif %}terminada às {{ formato.hora_br(coleta.terminado_em) or "N/A" }}.
+      </p>
+    {% endif %}
+  {% else %}
+    <p class="ajuda">Nenhuma coleta registrada.</p>
+  {% endif %}
+  <form method="post" action="/atualizar" class="filtros">
+    <div class="campo">
+      <label for="tickers">Tickers (opcional; vazio usa o universo)</label>
+      <input id="tickers" name="tickers" placeholder="PETR4,VALE3">
+    </div>
+    <div class="campo">
+      <label for="periodo">Período do histórico</label>
+      <input id="periodo" name="periodo" value="2y">
+    </div>
+    <div class="acoes"><button type="submit">Iniciar coleta</button></div>
+  </form>
+  <p class="ajuda">A coleta roda em segundo plano; esta página é redirecionada com o identificador da execução.</p>
+
+  <h3>Fontes de estimativa</h3>
+  <form method="post" action="/atualizar" class="filtros">
+    <div class="campo">
+      <label for="tickers-fontes">Tickers (opcional; vazio usa o universo)</label>
+      <input id="tickers-fontes" name="tickers" placeholder="PETR4,VALE3">
+    </div>
+    <div class="acoes">
+      <button type="submit" name="fonte" value="estimativas">Baixar preços-alvo (BTG + Genial)</button>
+      <button type="submit" name="fonte" value="consenso">Baixar consenso MSN</button>
+    </div>
+  </form>
+  <p class="ajuda">O job semanal de segunda (19:35) baixa as duas fontes de preço-alvo; estes botões disparam a coleta na hora.</p>
+
+  <h3>Stock Guide do BTG (Excel)</h3>
+  <form method="post" action="/fontes/planilha-btg" enctype="multipart/form-data" class="filtros">
+    <div class="campo">
+      <label for="planilha-btg">Planilha .xlsx do guia mensal</label>
+      <input id="planilha-btg" type="file" name="arquivo" accept=".xlsx,.xlsm" required>
+    </div>
+    <div class="acoes"><button type="submit">Enviar planilha</button></div>
+  </form>
+  <p class="ajuda">O leitor procura, em todas as abas, a coluna de ticker e a de preço-alvo. Ticker fora do universo ou alvo muito distante do preço atual são ignorados e aparecem no aviso.</p>
+</section>
+{% endblock %}

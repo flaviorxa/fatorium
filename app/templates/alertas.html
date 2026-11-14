@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}Alertas — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Alertas</h1>
+<p class="ajuda">
+  {{ nao_lidos }} alerta{{ "" if nao_lidos == 1 else "s" }} não lido{{ "" if nao_lidos == 1 else "s" }}.
+  Entradas e saídas de listas, falhas de coleta e cotações com mais de 5 dias úteis sem atualização.
+</p>
+
+<nav class="abas" aria-label="Filtro de alertas">
+  <a href="/alertas" {% if lidos is none %}aria-current="page"{% endif %}>Todos</a>
+  <a href="/alertas?lidos=0" {% if lidos == 0 %}aria-current="page"{% endif %}>Não lidos</a>
+  <a href="/alertas?lidos=1" {% if lidos == 1 %}aria-current="page"{% endif %}>Lidos</a>
+</nav>
+
+{% if alertas %}
+  <div class="tabela-rolagem">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Tipo</th>
+          <th scope="col">Ticker</th>
+          <th scope="col">Estratégia</th>
+          <th scope="col">Motivo</th>
+          <th scope="col">Referência</th>
+          <th scope="col">Criado em</th>
+          <th scope="col">Situação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alerta in alertas %}
+          <tr>
+            <td>{{ tipos.get(alerta.tipo, alerta.tipo) }}</td>
+            <td>
+              {% if alerta.ticker %}
+                <a href="/ativos/{{ alerta.ticker }}">{{ alerta.ticker }}</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              {% if alerta.estrategia %}
+                <a href="/rankings/{{ alerta.estrategia }}">{{ nome_estrategia(alerta.estrategia) }}</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ alerta.titulo }}</strong>
+              <p class="ajuda">{{ alerta.motivo }}</p>
+            </td>
+            <td>{{ formato.data_br(alerta.data_ref) or "N/A" }}</td>
+            <td>{{ formato.data_br(alerta.criado_em) or "N/A" }}</td>
+            <td>
+              {% if alerta.lido %}
+                Lido
+              {% else %}
+                <form method="post" action="/alertas/{{ alerta.id }}/lido">
+                  <button type="submit">Marcar como lido</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p>Nenhum alerta{{ " não lido" if lidos == 0 else "" }}.</p>
+{% endif %}
+{% endblock %}

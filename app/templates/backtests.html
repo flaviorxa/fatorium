@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block titulo %}Backtest — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Backtest</h1>
+<p class="ajuda">
+  A simulação usa somente cotações com data até cada decisão e a foto de
+  fundamentos mais recente até essa data. Nenhum dado posterior entra no
+  cálculo.
+</p>
+
+{% if erro %}
+  <p class="aviso" role="alert">{{ erro }}</p>
+{% endif %}
+{% if aviso %}
+  <p class="aviso" role="alert">{{ aviso }}</p>
+{% endif %}
+
+<section aria-labelledby="formulario-backtest">
+  <h2 id="formulario-backtest">Parâmetros</h2>
+  <form method="post" action="/backtests" class="formulario">
+    <p>
+      <label for="estrategia">Estratégia</label>
+      <select id="estrategia" name="estrategia">
+        {% for chave, rotulo in estrategias_disponiveis %}
+          <option value="{{ chave }}" {% if valores.estrategia == chave %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="inicio">Início</label>
+      <input type="date" id="inicio" name="inicio" value="{{ valores.inicio }}" required>
+    </p>
+    <p>
+      <label for="fim">Fim</label>
+      <input type="date" id="fim" name="fim" value="{{ valores.fim }}" required>
+    </p>
+    <p>
+      <label for="rebalanceamento">Rebalanceamento (meses)</label>
+      <input type="number" id="rebalanceamento" name="rebalanceamento" min="1" max="24" value="{{ valores.rebalanceamento }}" required>
+    </p>
+    <p>
+      <label for="top_n">Ativos na carteira (top_n)</label>
+      <input type="number" id="top_n" name="top_n" min="1" max="100" value="{{ valores.top_n }}" required>
+    </p>
+    <p>
+      <label for="custo">Custo por giro (bps)</label>
+      <input type="number" id="custo" name="custo" min="0" step="0.1" value="{{ valores.custo }}" required>
+    </p>
+    <p><button type="submit">Rodar backtest</button></p>
+  </form>
+</section>
+
+{% if resultado %}
+  {% if resultado.erro %}
+    <p class="aviso" role="alert"><strong>{{ resultado.erro }}</strong></p>
+  {% endif %}
+
+  <section class="bloco" aria-labelledby="limitacoes-backtest">
+    <h2 id="limitacoes-backtest">Limitações desta simulação</h2>
+    <div class="aviso">
+      <ul class="criterios">
+        {% for limitacao in resultado.limitacoes %}
+          <li>{{ limitacao }}</li>
+        {% else %}
+          <li>nenhuma limitação registrada.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  {% if not resultado.erro %}
+  <section class="bloco" aria-labelledby="resultado-backtest">
+    <h2 id="resultado-backtest">Resultado</h2>
+    <p class="ajuda">
+      Estratégia {{ resultado.estrategia }} · período efetivo
+      {{ formato.data_br(resultado.inicio) }} a {{ formato.data_br(resultado.fim) }} ·
+      cobertura de fundamentos desde {{ formato.data_br(resultado.cobertura.primeira_foto) or "N/A" }}
+      e de cotações desde {{ formato.data_br(resultado.cobertura.primeira_cotacao) or "N/A" }}.
+    </p>
+    <div class="tabela-rolagem">
+      <table>
+        <thead>
+          <tr><th scope="col">Métrica</th><th scope="col" class="num">Carteira</th><th scope="col" class="num">Benchmark ({{ resultado.benchmark.ticker }})</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Retorno total</td>
+            <td class="num">{{ formato.percentual(resultado.retorno_total_pct, sinal=True) }}</td>
+            <td class="num">{{ formato.percentual(resultado.benchmark.retorno_total_pct, sinal=True) or "N/A" }}</td>
+          </tr>
+          <tr>
+            <td>Retorno anualizado</td>
+            <td class="num">{{ formato.percentual(resultado.retorno_anualizado_pct, sinal=True) }}</td>
+            <td class="num">{{ formato.percentual(resultado.benchmark.retorno_anualizado_pct, sinal=True) or "N/A" }}</td>
+          </tr>
+          <tr>
+            <td>Volatilidade anual</td>
+            <td class="num">{{ formato.percentual(resultado.volatilidade_anual_pct) }}</td>
+            <td class="num">N/A</td>
+          </tr>
+          <tr>
+            <td>Drawdown máximo</td>
+            <td class="num">{{ formato.percentual(resultado.drawdown_maximo_pct) }}</td>
+            <td class="num">{{ formato.percentual(resultado.benchmark.drawdown_maximo_pct) or "N/A" }}</td>
+          </tr>
+          <tr>
+            <td>Valor final</td>
+            <td class="num">{{ formato.moeda(resultado.valor_final) }}</td>
+            <td class="num">N/A</td>
+          </tr>
+          <tr>
+            <td>Rebalanceamentos</td>
+            <td class="num">{{ resultado.rebalanceamentos }}</td>
+            <td class="num">N/A</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bloco" aria-labelledby="grafico-backtest">
+    <h2 id="grafico-backtest">Carteira × benchmark</h2>
+    <div id="grafico-preco" class="grafico" role="img" aria-label="Evolução da carteira simulada e do benchmark"></div>
+    <script type="application/json" id="dados-grafico">{{ grafico|tojson }}</script>
+    <script src="/static/grafico.js" defer></script>
+  </section>
+
+  <section class="bloco" aria-labelledby="carteiras-backtest">
+    <h2 id="carteiras-backtest">Carteiras escolhidas</h2>
+    <div class="tabela-rolagem">
+      <table>
+        <thead>
+          <tr><th scope="col">Data da decisão</th><th scope="col">Ativos</th><th scope="col">Pesos</th></tr>
+        </thead>
+        <tbody>
+          {% for carteira in resultado.carteiras %}
+            <tr>
+              <td>{{ formato.data_br(carteira.data) }}</td>
+              <td>
+                {% if carteira.tickers %}
+                  {{ carteira.tickers|join(", ") }}
+                {% else %}
+                  <span class="ajuda">sem ativo elegível: carteira em caixa</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if carteira.pesos %}
+                  {% for peso in carteira.pesos %}{{ formato.percentual(peso * 100) }}{% if not loop.last %} · {% endif %}{% endfor %}
+                {% else %}
+                  N/A
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="3">Nenhuma decisão executada.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <p class="aviso">Resultado de backtest não é promessa de retorno futuro.</p>
+{% endif %}
+{% endblock %}

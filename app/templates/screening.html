@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "_tabela.html" as t %}
+{% block titulo %}Screening — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Screening</h1>
+<p class="ajuda">Quatro famílias de leitura das médias de 9 e 21, sempre no fechamento diário. As definições e os números em uso aparecem abaixo e são editáveis pelos filtros.</p>
+
+<form method="get" action="/screening" class="filtros">
+  <div class="campo">
+    <label for="classe">Classe</label>
+    <select id="classe" name="classe">
+      <option value="">Todas</option>
+      {% for chave, nome in opcoes_classes.items() %}
+        <option value="{{ chave }}" {% if classe == chave %}selected{% endif %}>{{ nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label for="tipo">Tipo de média</label>
+    <select id="tipo" name="tipo">
+      <option value="ema" {% if configuracao.tipo == "ema" %}selected{% endif %}>EMA</option>
+      <option value="sma" {% if configuracao.tipo == "sma" %}selected{% endif %}>SMA</option>
+    </select>
+  </div>
+  <div class="campo">
+    <label for="janela_cruzamento_dias">Janela do cruzamento (pregões)</label>
+    <input id="janela_cruzamento_dias" name="janela_cruzamento_dias" type="number" min="1" step="1" value="{{ configuracao.janela_cruzamento_dias }}">
+  </div>
+  <div class="campo">
+    <label for="tolerancia_pullback_pct">Tolerância do pullback (%)</label>
+    <input id="tolerancia_pullback_pct" name="tolerancia_pullback_pct" type="number" min="0" step="any" value="{{ configuracao.tolerancia_pullback_pct }}">
+  </div>
+  <div class="campo">
+    <label for="janela_pullback_dias">Janela do pullback (pregões)</label>
+    <input id="janela_pullback_dias" name="janela_pullback_dias" type="number" min="1" step="1" value="{{ configuracao.janela_pullback_dias }}">
+  </div>
+  <div class="campo">
+    <label for="limiar_preco_m9_pct">Limiar preço↔M9 (%)</label>
+    <input id="limiar_preco_m9_pct" name="limiar_preco_m9_pct" type="number" min="0" step="any" value="{{ configuracao.limiar_preco_m9_pct }}">
+  </div>
+  <div class="campo">
+    <label for="limiar_m9_m21_pct">Limiar M9↔M21 (%)</label>
+    <input id="limiar_m9_m21_pct" name="limiar_m9_m21_pct" type="number" min="0" step="any" value="{{ configuracao.limiar_m9_m21_pct }}">
+  </div>
+  <div class="campo">
+    <label for="historico_minimo">Histórico mínimo (barras)</label>
+    <input id="historico_minimo" name="historico_minimo" type="number" min="2" step="1" value="{{ configuracao.historico_minimo }}">
+  </div>
+  <div class="acoes">
+    <button type="submit">Aplicar filtros</button>
+  </div>
+</form>
+
+<section class="bloco" aria-labelledby="definicoes-screening">
+  <h2 id="definicoes-screening">Definições em uso</h2>
+  <ul>
+    {% for rotulo, texto in definicoes %}
+      <li><strong>{{ rotulo }}:</strong> {{ texto }}</li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% for secao in secoes %}
+  <section class="bloco" aria-labelledby="screening-{{ secao.chave }}">
+    <div class="bloco-cabecalho">
+      <h2 id="screening-{{ secao.chave }}">{{ secao.titulo }}</h2>
+      <p class="ajuda">{{ secao.total }} ativo(s) · pregão de {{ data_ref or "N/A" }}</p>
+    </div>
+    {{ t.tabela(colunas, secao.linhas) }}
+  </section>
+{% endfor %}
+{% endblock %}

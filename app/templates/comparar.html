@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block titulo %}Comparar ativos — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Comparar ativos</h1>
+<form method="get" action="/comparar" class="filtros">
+  <div class="campo">
+    <label for="tickers">Tickers separados por vírgula</label>
+    <input id="tickers" name="tickers" value="{{ bruto }}" placeholder="PETR4,VALE3,ITUB4">
+  </div>
+  <div class="acoes"><button type="submit">Comparar</button></div>
+</form>
+
+{% if ausentes %}
+  <p class="aviso">Não encontrados no banco: {{ ausentes|join(", ") }}.</p>
+{% endif %}
+
+{% if ativos %}
+  <p class="aviso">Setores diferentes não são comparáveis diretamente. O destaque por linha indica o melhor valor no sentido do indicador, mas não substitui a análise do negócio.</p>
+  <div class="tabela-rolagem">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Indicador</th>
+          {% for ativo in ativos %}
+            <th scope="col" class="num"><a href="/ativos/{{ ativo.ativo.ticker }}">{{ ativo.ativo.ticker }}</a></th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in linhas %}
+          <tr>
+            <th scope="row">{{ linha.rotulo }} <span class="ajuda">({{ "menor é melhor" if linha.sentido == "menor" else "maior é melhor" }})</span></th>
+            {% for ativo in ativos %}
+              {% set celula = linha.celulas[loop.index0] %}
+              <td class="num{% if celula.melhor %} melhor{% endif %}">
+                {% if celula.motivo %}
+                  <span class="na" title="{{ celula.motivo }}">N/A</span>
+                {% else %}
+                  {{ celula.texto }}
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="ajuda">Informe ao menos um ticker existente para ver a tabela lado a lado.</p>
+{% endif %}
+{% endblock %}

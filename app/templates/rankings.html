@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import "_tabela.html" as t %}
+{% block titulo %}Rankings — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Rankings</h1>
+<p class="ajuda">Uma seção por estratégia. As tabelas mostram as 10 primeiras posições; o link abre o ranking completo. Clique no cabeçalho para ordenar.</p>
+
+<form method="get" action="/rankings" class="filtros">
+  <div class="campo">
+    <label for="cols">Colunas (separadas por vírgula)</label>
+    <input id="cols" name="cols" value="{{ cols_param or '' }}" placeholder="ticker,pl,pvp,dy">
+    <p class="ajuda">Exemplos de colunas: ticker, pl, pvp, dy, roe, roic, pontuacao, preco.</p>
+  </div>
+  <div class="acoes">
+    <button type="submit">Aplicar colunas</button>
+  </div>
+</form>
+
+{% for secao in secoes %}
+  <section class="bloco" aria-labelledby="estrategia-{{ secao.estrategia }}">
+    <div class="bloco-cabecalho">
+      <h2 id="estrategia-{{ secao.estrategia }}">
+        <a href="/rankings/{{ secao.estrategia }}">{{ secao.nome }}</a>
+      </h2>
+      <p class="ajuda">
+        {% if secao.existe %}
+          {{ secao.total }} item(ns) elegível(is) · gerado em {{ formato.data_br(secao.gerado_em) }}
+        {% else %}
+          Nenhum ranking gerado para esta estratégia.
+        {% endif %}
+      </p>
+    </div>
+    {% if secao.existe %}
+      {{ t.tabela(secao.colunas, secao.linhas) }}
+      <p><a href="/rankings/{{ secao.estrategia }}">Ver tabela completa de {{ secao.nome }}</a></p>
+    {% endif %}
+  </section>
+{% endfor %}
+{% endblock %}

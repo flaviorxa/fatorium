@@ -1,0 +1,43 @@
+x-casaos:
+  architectures:
+    - amd64
+  main: investiq
+  app_id: "investiq"
+  title:
+    en_us: InvestIQ
+    pt_br: InvestIQ
+  tagline:
+    en_us: "Análise fundamentalista de ações, FIIs e ETFs da B3"
+    pt_br: "Análise fundamentalista de ações, FIIs e ETFs da B3"
+  description:
+    en_us: "Fundamental analysis for Brazilian stocks, REITs and ETFs using public data. Free and self-hosted."
+    pt_br: "Análise fundamentalista de ações, FIIs e ETFs da B3 com dados de fontes públicas. Sem custo e rodando localmente."
+  icon: "https://raw.githubusercontent.com/flaviorxa/investiq/main/app/static/logo.png"
+  category: "Finance"
+  port_map: "8080"
+  scheme: "http"
+  index: "/"
+  author: "Flavio Albuquerque"
+  developer: "flaviorxa"
+  version: "1.0.0"
+  tips:
+    before_install:
+      - en_us: "Set a strong password (16+ chars) in the .env file"
+        pt_br: "Defina uma senha forte (16+ caracteres) no arquivo .env"
+
+services:
+  investiq:
+    image: ghcr.io/flaviorxa/investiq:latest
+    container_name: investiq
+    restart: unless-stopped
+    ports:
+      - "${INVESTIQ_PORTA:-8080}:8000"
+    environment:
+      INVEST_SENHA: ${INVEST_SENHA:?defina INVEST_SENHA no .env}
+      INVEST_USUARIO: ${INVEST_USUARIO:-invest}
+      TZ: America/Sao_Paulo
+    volumes:
+      - investiq-data:/app/data
+
+volumes:
+  investiq-data:

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Estratégias — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<h1>Estratégias</h1>
+<p class="ajuda">Parâmetros em modo leitura: versão, pesos e filtros usados na geração dos rankings.</p>
+
+{% for secao in secoes %}
+  <section class="bloco" aria-labelledby="estrategia-{{ loop.index }}">
+    <h2 id="estrategia-{{ loop.index }}">{{ secao.nome }}</h2>
+    {% if secao.descricao %}
+      <p class="ajuda">{{ secao.descricao }}</p>
+    {% endif %}
+    <div class="tabela-rolagem">
+      <table>
+        <thead><tr><th scope="col">Parâmetro</th><th scope="col">Valor</th></tr></thead>
+        <tbody>
+          {% for linha in secao.linhas %}
+            <tr>
+              <td>{{ linha.chave }}</td>
+              <td>{{ linha.valor }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="2">Sem parâmetros adicionais.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endfor %}
+{% endblock %}

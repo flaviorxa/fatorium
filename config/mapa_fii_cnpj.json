@@ -1,0 +1,148 @@
+{
+  "AFHI11": {
+    "cnpj": "36.642.293/0001-58",
+    "fonte": "clubefii"
+  },
+  "ALZR11": {
+    "cnpj": "28.737.771/0001-85",
+    "fonte": "clubefii"
+  },
+  "AZIN11": {
+    "cnpj": "51.484.496/0001-57",
+    "fonte": "clubefii"
+  },
+  "BDIV11": {
+    "cnpj": "35.640.741/0001-11",
+    "fonte": "clubefii"
+  },
+  "BINC11": {
+    "cnpj": "55.239.865/0001-05",
+    "fonte": "clubefii"
+  },
+  "BODB11": {
+    "cnpj": "41.771.670/0001-99",
+    "fonte": "clubefii"
+  },
+  "BRCO11": {
+    "cnpj": "20.748.515/0001-81",
+    "fonte": "clubefii"
+  },
+  "BTLG11": {
+    "cnpj": "11.839.593/0001-09",
+    "fonte": "clubefii"
+  },
+  "CDII11": {
+    "cnpj": "48.973.783/0001-16",
+    "fonte": "clubefii"
+  },
+  "CPSH11": {
+    "cnpj": "47.896.665/0001-99",
+    "fonte": "clubefii"
+  },
+  "CPTI11": {
+    "cnpj": "38.065.012/0001-77",
+    "fonte": "clubefii"
+  },
+  "CRAA11": {
+    "cnpj": "48.903.610/0001-21",
+    "fonte": "clubefii"
+  },
+  "DIVS11": {
+    "cnpj": "58.390.457/0001-30",
+    "fonte": "clubefii"
+  },
+  "GGRC11": {
+    "cnpj": "26.614.291/0001-00",
+    "fonte": "clubefii"
+  },
+  "HGBS11": {
+    "cnpj": "08.431.747/0001-06",
+    "nome_cvm": "HEDGE BRASIL SHOPPING FUNDO DE INVESTIMENTO IMOBILIÁRIO",
+    "similaridade": 1.0
+  },
+  "HSLG11": {
+    "cnpj": "32.903.621/0001-71",
+    "nome_cvm": "HSI LOGÍSTICA FUNDO DE INVESTIMENTO IMOBILIÁRIO",
+    "similaridade": 1.0
+  },
+  "HSML11": {
+    "cnpj": "32.892.018/0001-31",
+    "fonte": "clubefii"
+  },
+  "JMBI11": {
+    "cnpj": "55.276.939/0001-75",
+    "fonte": "clubefii"
+  },
+  "JURO11": {
+    "cnpj": "42.730.834/0001-00",
+    "fonte": "clubefii"
+  },
+  "KDIF11": {
+    "cnpj": "26.324.298/0001-89",
+    "fonte": "clubefii"
+  },
+  "KNCR11": {
+    "cnpj": "16.706.958/0001-32",
+    "nome_cvm": "KINEA RENDIMENTOS IMOBILIARIOS FII RESPONSABILIDADE LIMITADA",
+    "similaridade": 1.0
+  },
+  "KNHY11": {
+    "cnpj": "30.130.708/0001-28",
+    "nome_cvm": "KINEA HIGH YIELD CRI FII RESPONSABILIDADE LIMITADA",
+    "similaridade": 1.0
+  },
+  "KNIP11": {
+    "cnpj": "24.960.430/0001-13",
+    "nome_cvm": "KINEA INDICES DE PREÇOS FII RESPONSABILIDADE LIMITADA",
+    "similaridade": 1.0
+  },
+  "KNSC11": {
+    "cnpj": "35.864.448/0001-38",
+    "nome_cvm": "KINEA SECURITIES FII RESPONSABILIDADE LIMITADA",
+    "similaridade": 1.0
+  },
+  "MANA11": {
+    "cnpj": "42.888.583/0001-89",
+    "nome_cvm": "MANATÍ CAPITAL HEDGE FUND FII",
+    "similaridade": 1.0
+  },
+  "MCCI11": {
+    "cnpj": "23.648.935/0001-84",
+    "fonte": "clubefii"
+  },
+  "PORD11": {
+    "cnpj": "17.156.502/0001-09",
+    "nome_cvm": "POLO CREDITO IMOBILIARIO - FUNDO DE INVESTIMENTO IMOBILIARIO",
+    "similaridade": 1.0
+  },
+  "RINV11": {
+    "cnpj": "44.625.612/0001-45",
+    "fonte": "clubefii"
+  },
+  "SAPI11": {
+    "cnpj": "51.646.298/0001-42",
+    "fonte": "clubefii"
+  },
+  "SNEL11": {
+    "cnpj": "43.741.171/0001-84",
+    "nome_cvm": "FUNDO DE INVESTIMENTO IMOBILIÁRIO SUNO ENERGIAS LIMPAS",
+    "similaridade": 1.0
+  },
+  "SNID11": {
+    "cnpj": "48.969.881/0001-80",
+    "fonte": "clubefii"
+  },
+  "SNME11": {
+    "cnpj": "52.227.760/0001-30",
+    "fonte": "clubefii"
+  },
+  "SPXS11": {
+    "cnpj": "43.010.543/0001-00",
+    "fonte": "clubefii"
+  },
+  "WHGR11": {
+    "cnpj": "41.256.643/0001-88",
+    "nome_cvm": "WHG REAL ESTATE FII",
+    "similaridade": 1.0
+  }
+}

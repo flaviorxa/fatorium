@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>{% block titulo %}InvestIQ — Inteligência para Investir Melhor{% endblock %}</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <script src="/static/tema.js?v={{ versao_estatica() }}"></script>
+  <link rel="stylesheet" href="/static/estilo.css?v={{ versao_estatica() }}">
+  {% block head %}{% endblock %}
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+  <header class="cabecalho">
+    <div class="limite">
+      <div class="cabecalho-topo">
+        <p class="marca">
+          <a href="/">
+            <img src="/static/logo.png" alt="" width="36" height="36" class="marca-icone">
+            <span class="marca-texto">Invest<span class="marca-iq">IQ</span>
+              <span class="marca-tagline">Inteligência para Investir Melhor</span>
+            </span>
+          </a>
+        </p>
+        <label class="tema-escolha" for="tema">Tema
+          <select id="tema" aria-label="Tema do site">
+            <option value="claro">Claro</option>
+            <option value="escuro">Escuro</option>
+          </select>
+        </label>
+        <button type="button" class="botao-menu" aria-expanded="false" aria-controls="menu-principal" aria-label="Menu">
+          <span aria-hidden="true">☰</span>
+        </button>
+      </div>
+      <nav id="menu-principal" aria-label="Seções do site">
+        <a href="/">Dashboard</a>
+        <a href="/rankings">Rankings</a>
+        <a href="/screening">Screening</a>
+        <a href="/ativos">Ativos</a>
+        <a href="/universo">Cadastro de Ativos</a>
+        <a href="/comparar">Comparar</a>
+        <a href="/estrategias">Estratégias</a>
+        <a href="/backtests">Backtest</a>
+        <a href="/fontes">Fontes</a>
+        <a href="/alertas">Alertas</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="limite">
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="rodape">
+    <div class="limite">
+      <p>Conteúdo informativo — não é recomendação CVM/Anbima.</p>
+      <p>Os números vêm das fontes citadas em <a href="/fontes">Fontes</a>; confira antes de decidir.</p>
+    </div>
+  </footer>
+  {% block scripts %}{% endblock %}
+  <script src="/static/menu.js?v={{ versao_estatica() }}"></script>
+</body>
+</html>

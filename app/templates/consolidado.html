@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% import "_tabela.html" as t %}
+{% block titulo %}Ranking consolidado — InvestIQ{% endblock %}
+
+{% block conteudo %}
+<p class="trilha"><a href="/rankings">Rankings</a> / Consolidado</p>
+<h1>Ranking consolidado</h1>
+<p class="ajuda">
+  Para cada ativo, o percentil é <code>(N − posição + 1) / N</code> dentro de
+  cada lista (1,0 = primeiro de N; 0,0 = último). A pontuação é a média dos
+  percentis × 100, o que compara listas de tamanhos diferentes. Entram apenas
+  ativos presentes em pelo menos {{ min_listas }} listas; o desempate é listas
+  (maior primeiro), pontuação (maior primeiro) e ticker.
+</p>
+
+<form method="get" action="/rankings/consolidado" class="filtros">
+  <div class="campo">
+    <label for="min_listas">Mínimo de listas</label>
+    <input id="min_listas" name="min_listas" type="number" min="1" value="{{ min_listas }}">
+  </div>
+  <div class="campo">
+    <label for="classe">Classe</label>
+    <select id="classe" name="classe">
+      <option value="">Todas</option>
+      {% for chave, rotulo in opcoes_classes.items() %}
+        <option value="{{ chave }}" {% if chave == classe %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="acoes">
+    <button type="submit">Aplicar</button>
+  </div>
+</form>
+
+<p class="ajuda">
+  {{ itens|length }} ativo(s) com {{ min_listas }} ou mais listas ·
+  colunas de posição mostram a posição dentro de cada estratégia.
+</p>
+
+<div class="tabela-rolagem">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col" class="num">#</th>
+        <th scope="col">Ticker</th>
+        <th scope="col">Classe</th>
+        <th scope="col" class="num">Listas</th>
+        <th scope="col" class="num">Pontuação</th>
+        {% for estrategia in estrategias %}
+          <th scope="col" class="num">{{ nomes_curtos[estrategia] }}</th>
+        {% endfor %}
+        <th scope="col" class="num">Preço</th>
+        <th scope="col" class="num">P/L</th>
+        <th scope="col" class="num">P/VP</th>
+        <th scope="col" class="num">DY</th>
+        <th scope="col" class="num">ROE</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in itens %}
+        {% set indicadores = item.get("indicadores", {}) %}
+        <tr>
+          <td class="num">{{ loop.index }}</td>
+          <td><a href="/ativos/{{ item.ticker }}">{{ item.ticker }}</a></td>
+          <td>{{ nome_classe(item.classe) }}</td>
+          <td class="num">{{ item.listas }}</td>
+          <td class="num">{{ formato.numero(item.pontuacao) or "N/A" }}</td>
+          {% for estrategia in estrategias %}
+            {% set posicao = item.posicoes.get(estrategia) %}
+            <td class="num">
+              {% if posicao %}
+                <a href="/rankings/{{ estrategia }}" title="de {{ posicao.de }}">{{ posicao.posicao }}º</a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          {% endfor %}
+          <td class="num">{{ formato.moeda(item.preco) or "N/A" }}</td>
+          <td class="num">{{ formato.numero(indicadores.get("pl")) or "N/A" }}</td>
+          <td class="num">{{ formato.numero(indicadores.get("pvp")) or "N/A" }}</td>
+          <td class="num">{{ t.dy(indicadores.get("dy")) }}</td>
+          <td class="num">{{ formato.percentual(indicadores.get("roe")) or "N/A" }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="{{ 10 + estrategias|length }}">Nenhum ativo atende aos filtros.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="ajuda">Gerado em {{ formato.data_br(gerado_em) }} a partir dos rankings mais recentes de cada estratégia ativa.</p>
+{% endblock %}
