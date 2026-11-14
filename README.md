@@ -173,6 +173,11 @@ site muda de layout.
 e6a254da-9d7f-4a69-80ce-6bbb2b242b01
 ```
 
+<img src="docs/pix-qr.png" alt="QR Code Pix para doações ao FATORIUM" width="180">
+
+Aponte a câmera do app do seu banco para o QR acima, ou copie a chave. Sem valor fixo: você decide
+quanto.
+
 **Bitcoin (BTC)**
 
 ```
