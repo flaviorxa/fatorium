@@ -233,3 +233,84 @@ def test_excecao_em_job_nao_derruba_o_processo(monkeypatch, tmp_path):
     )
     assert len(falhas) == 1
     assert falhas[0]["etapa"] == "teste"
+
+
+def test_garantir_cnpjs_fii_captura_quando_falta_cnpj(monkeypatch):
+    monkeypatch.setattr(
+        config,
+        "ler_universo",
+        lambda: {"KNIP11": "fii", "HGLG11": "fii"},
+    )
+    monkeypatch.setattr(
+        config,
+        "ler_mapa_fii",
+        lambda: {"KNIP11": {"cnpj": "00.000.000/0001-00"}},
+    )
+    resumo = {
+        "total_clubefii": 300,
+        "mapeados": ["HGLG11"],
+        "sem_cnpj": [],
+    }
+    chamadas = {"baixar": 0}
+
+    def baixar():
+        chamadas["baixar"] += 1
+        return "texto"
+
+    monkeypatch.setattr("scripts.coletar_cnpj_clubefii.baixar", baixar)
+    monkeypatch.setattr(
+        "scripts.coletar_cnpj_clubefii.processar", lambda texto: resumo
+    )
+
+    assert agenda._garantir_cnpjs_fii() == resumo
+    assert chamadas["baixar"] == 1
+
+
+def test_garantir_cnpjs_fii_nao_baixa_se_todos_mapeados(monkeypatch):
+    monkeypatch.setattr(
+        config,
+        "ler_universo",
+        lambda: {"KNIP11": "fii", "HGLG11": "fii"},
+    )
+    monkeypatch.setattr(
+        config,
+        "ler_mapa_fii",
+        lambda: {
+            "KNIP11": {"cnpj": "00.000.000/0001-00"},
+            "HGLG11": {"cnpj": "11.111.111/0001-11"},
+        },
+    )
+    chamadas = {"baixar": 0}
+
+    def baixar():
+        chamadas["baixar"] += 1
+        return "texto"
+
+    monkeypatch.setattr("scripts.coletar_cnpj_clubefii.baixar", baixar)
+    monkeypatch.setattr(
+        "scripts.coletar_cnpj_clubefii.processar",
+        lambda texto: {"mapeados": [], "sem_cnpj": []},
+    )
+
+    assert agenda._garantir_cnpjs_fii() is None
+    assert chamadas["baixar"] == 0
+
+
+def test_garantir_cnpjs_fii_engole_erro_de_captura(monkeypatch):
+    monkeypatch.setattr(
+        config,
+        "ler_universo",
+        lambda: {"KNIP11": "fii"},
+    )
+    monkeypatch.setattr(config, "ler_mapa_fii", lambda: {})
+
+    def baixar():
+        raise RuntimeError("sem rede")
+
+    monkeypatch.setattr("scripts.coletar_cnpj_clubefii.baixar", baixar)
+    monkeypatch.setattr(
+        "scripts.coletar_cnpj_clubefii.processar",
+        lambda texto: {"mapeados": [], "sem_cnpj": []},
+    )
+
+    assert agenda._garantir_cnpjs_fii() is None

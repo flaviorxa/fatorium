@@ -52,6 +52,12 @@
       {% endfor %}
     </ul>
   {% endif %}
+  <form method="post" action="/fontes/cnpjs" class="filtros">
+    <div class="acoes">
+      <button type="submit">Capturar CNPJs (ClubeFII)</button>
+    </div>
+  </form>
+  <p class="ajuda">Lê a lista do ClubeFII e atualiza o mapeamento ticker–CNPJ usado pela CVM. Leva até um minuto.</p>
 </section>
 
 <section aria-labelledby="agendamento">

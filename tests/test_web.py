@@ -681,7 +681,7 @@ def test_api_fontes_lista_so_o_fii_do_universo_fora_do_mapa(
     assert mapeamento["pendentes"] == 1
     assert (
         mapeamento["texto"]
-        == "1 FII(s) sem CNPJ: use scripts/coletar_cnpj_clubefii.py"
+        == "1 FII(s) sem CNPJ: use o botão Capturar CNPJs"
     )
 
 
@@ -698,6 +698,54 @@ def test_pagina_fontes_mostra_mapeamento_de_fii(cliente, monkeypatch, tmp_path):
     assert resposta.status_code == 200
     assert "Mapeamento de FIIs" in resposta.text
     assert "todos os FIIs do universo têm CNPJ mapeado" in resposta.text
+    assert "Capturar CNPJs (ClubeFII)" in resposta.text
+
+
+def test_capturar_cnpjs_fii_atualiza_mapa_e_avisa_pendentes(cliente, monkeypatch):
+    monkeypatch.setattr(
+        "scripts.coletar_cnpj_clubefii.baixar", lambda: "texto"
+    )
+    monkeypatch.setattr(
+        "scripts.coletar_cnpj_clubefii.processar",
+        lambda texto: {
+            "total_clubefii": 300,
+            "mapeados": ["KNIP11", "HGLG11"],
+            "sem_cnpj": ["XPML11"],
+        },
+    )
+
+    resposta = cliente.post(
+        "/fontes/cnpjs",
+        headers={"Origin": "http://testserver"},
+        follow_redirects=False,
+    )
+
+    assert resposta.status_code == 303
+    assert "aviso=CNPJs+capturados" in resposta.headers["location"]
+    assert "XPML11" in resposta.headers["location"]
+
+
+def test_capturar_cnpjs_fii_com_erro_avisa_e_app_segue_vivo(
+    cliente, monkeypatch
+):
+    monkeypatch.setattr(
+        "scripts.coletar_cnpj_clubefii.baixar", lambda: "texto"
+    )
+
+    def explode(texto):
+        raise RuntimeError("lista veio com 0")
+
+    monkeypatch.setattr("scripts.coletar_cnpj_clubefii.processar", explode)
+
+    resposta = cliente.post(
+        "/fontes/cnpjs",
+        headers={"Origin": "http://testserver"},
+        follow_redirects=False,
+    )
+
+    assert resposta.status_code == 303
+    assert "aviso=captura+de+CNPJs+falhou" in resposta.headers["location"]
+    assert cliente.get("/fontes").status_code == 200
 
 
 def test_fontes_recarrega_enquanto_coleta_esta_em_andamento(cliente):

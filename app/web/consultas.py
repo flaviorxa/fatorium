@@ -593,7 +593,7 @@ def mapeamento_fii() -> dict[str, Any]:
     if pendentes:
         texto = (
             f"{len(pendentes)} FII(s) sem CNPJ: "
-            "use scripts/coletar_cnpj_clubefii.py"
+            "use o botão Capturar CNPJs"
         )
     else:
         texto = "todos os FIIs do universo têm CNPJ mapeado"

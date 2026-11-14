@@ -2971,6 +2971,32 @@ async def salvar_agendamento(request: Request) -> RedirectResponse:
     )
 
 
+@app.post("/fontes/cnpjs")
+def capturar_cnpjs_fii() -> RedirectResponse:
+    """Captura a lista de CNPJs do ClubeFII e atualiza o mapa ticker–CNPJ."""
+
+    from scripts import coletar_cnpj_clubefii
+
+    try:
+        resumo = coletar_cnpj_clubefii.processar(coletar_cnpj_clubefii.baixar())
+    except Exception as exc:  # noqa: BLE001 - a tela mostra o erro, o app segue vivo
+        erro = f"{type(exc).__name__}: {exc}"
+        db.registrar_falha("clubefii", None, "cnpj", erro)
+        return RedirectResponse(
+            url=f"/fontes?{urlencode({'aviso': f'captura de CNPJs falhou: {erro}'})}",
+            status_code=303,
+        )
+
+    sem_cnpj = resumo.get("sem_cnpj") or []
+    aviso = (
+        f"CNPJs capturados: {len(resumo.get('mapeados') or [])} FII(s) do universo mapeados"
+        + (f"; continuam sem CNPJ: {', '.join(sem_cnpj)}" if sem_cnpj else "")
+    )
+    return RedirectResponse(
+        url=f"/fontes?{urlencode({'aviso': aviso})}", status_code=303
+    )
+
+
 @app.post("/fontes/planilha-btg")
 async def enviar_planilha_btg(arquivo: UploadFile = File(...)) -> RedirectResponse:
     """Recebe o Stock Guide do BTG em Excel e grava os alvos."""

@@ -234,10 +234,36 @@ def _job_estimativas() -> dict[str, Any]:
         db.finalizar_coleta(id_coleta, status, resumo)
 
 
+def _garantir_cnpjs_fii() -> dict[str, Any] | None:
+    """Captura CNPJs ausentes antes de ler a CVM (a CVM é indexada por CNPJ).
+
+    Melhor esforço: se a captura falhar, o job da CVM segue com o mapa atual.
+    """
+
+    from scripts import coletar_cnpj_clubefii
+
+    universo = config.ler_universo()
+    mapa = config.ler_mapa_fii()
+    pendentes = [
+        ticker
+        for ticker, classe in universo.items()
+        if classe == "fii" and ticker not in mapa
+    ]
+    if not pendentes:
+        return None
+    try:
+        logger.info("CVM: %d FII(s) sem CNPJ; capturando no ClubeFII", len(pendentes))
+        return coletar_cnpj_clubefii.processar(coletar_cnpj_clubefii.baixar())
+    except Exception:  # noqa: BLE001 - não derruba o job da CVM
+        logger.exception("captura de CNPJs falhou; seguindo com o mapa atual")
+        return None
+
+
 def _recarregar_cvm(ano: int) -> dict[str, int]:
     from app.fontes import cvm
     from scripts.coletar import _campos_cvm, _ler_mapa_fii
 
+    captura = _garantir_cnpjs_fii()
     diretorio = cvm.baixar_mensal(ano)
     fundos = cvm.ler_fundos(ano, diretorio)
     mapa = _ler_mapa_fii()
@@ -263,6 +289,7 @@ def _recarregar_cvm(ano: int) -> dict[str, int]:
         "fundos": len(fundos),
         "alternativos": len(alternativos),
         "fundamentos": gravados,
+        "cnpjs_capturados": len((captura or {}).get("mapeados") or []),
     }
 
 
