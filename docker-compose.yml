@@ -14,7 +14,7 @@ x-casaos:
     pt_br: "Análise fundamentalista de ações, FIIs e ETFs da B3 com dados de fontes públicas. Sem custo e rodando localmente."
   icon: "https://raw.githubusercontent.com/flaviorxa/fatorium/main/app/static/logo.png"
   category: "Finance"
-  port_map: "8080"
+  port_map: "8443"
   scheme: "http"
   index: "/"
   author: "Flavio Albuquerque"
@@ -31,7 +31,7 @@ services:
     container_name: fatorium
     restart: unless-stopped
     ports:
-      - "${FATORIUM_PORTA:-8080}:8000"
+      - "${FATORIUM_PORTA:-8443}:8000"
     environment:
       # opcional: com senha de 16+ caracteres o site exige HTTP Basic; vazio = aberto
       INVEST_SENHA: ${INVEST_SENHA:-}

@@ -25,7 +25,16 @@ sem serviço pago.
 
 ## Instalação rápida (Docker)
 
-Com login (senha aleatória de 32 caracteres no `.env`):
+Padrão, sem login (acesso livre para quem alcançar a porta — use em rede local ou atrás de proxy/VPN):
+
+```bash
+mkdir -p ~/fatorium && cd ~/fatorium
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml -o docker-compose.yml
+docker compose up -d
+```
+
+Com login (Basic Auth): acrescente `INVEST_SENHA` ao `.env` antes de subir. A senha precisa de 16
+caracteres ou mais; com ela definida, o site passa a pedir usuário e senha.
 
 ```bash
 mkdir -p ~/fatorium && cd ~/fatorium
@@ -35,16 +44,7 @@ chmod 600 .env
 docker compose up -d
 ```
 
-A senha é opcional: sem `INVEST_SENHA` no `.env` o site sobe aberto, sem login. Para isso, pule o
-`printf`:
-
-```bash
-mkdir -p ~/fatorium && cd ~/fatorium
-curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml -o docker-compose.yml
-docker compose up -d
-```
-
-Abra `http://localhost:8080` — usuário padrão `invest`, quando a autenticação está ligada.
+Abra `http://localhost:8443` — usuário padrão `invest`, quando a autenticação está ligada.
 A primeira execução dispara a coleta inicial em segundo plano (~15–20 min para o universo padrão);
 até ela terminar, as telas mostram pouco ou nenhum dado.
 
@@ -56,9 +56,43 @@ curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh 
 
 ### CasaOS
 
-O `docker-compose.yml` traz metadados `x-casaos`, então dá para instalar como app personalizado
-(CasaOS → App Store → "Install a customized app" → colar o compose) ou usar o `install.sh` acima.
-O volume `fatorium-data` guarda banco, cache da CVM e a lista de ativos.
+Instalação como app personalizado, sem linha de comando:
+
+1. No CasaOS, abra **App Store** e clique no **+** (canto superior direito) → **Install a
+   customized app**.
+2. Cole o YAML abaixo no campo do compose e clique em **Install**:
+
+```yaml
+name: fatorium
+services:
+  fatorium:
+    image: ghcr.io/flaviorxa/fatorium:latest
+    container_name: fatorium
+    restart: unless-stopped
+    ports:
+      - "8443:8000"
+    environment:
+      TZ: America/Sao_Paulo
+      INVEST_USUARIO: invest
+      # opcional: descomente e defina para exigir login (16+ caracteres)
+      # INVEST_SENHA: "sua-senha-de-16-ou-mais-caracteres"
+    volumes:
+      - fatorium-data:/app/data
+volumes:
+  fatorium-data:
+```
+
+3. Abra `http://IP-DO-SERVIDOR:8443`.
+
+O `docker-compose.yml` do repositório já traz os metadados `x-casaos` (nome, ícone, categoria,
+porta) usados pelo CasaOS. No terminal do servidor, o `install.sh` faz o mesmo caminho:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh | sh
+```
+
+O volume `fatorium-data` guarda banco, cache da CVM e a lista de ativos — é ele que você manteve
+no backup.
 
 > A imagem é construída **só no GitHub Actions** e publicada em `ghcr.io/flaviorxa/fatorium`.
 
@@ -78,7 +112,7 @@ Testes: `.venv/bin/python -m pytest -q` (314 testes, nenhum acessa a rede).
 |---|---|---|
 | `INVEST_SENHA` | — (opcional) | Com 16+ caracteres exige HTTP Basic; vazio roda sem login. |
 | `INVEST_USUARIO` | `invest` | Usuário do Basic Auth. |
-| `FATORIUM_PORTA` | `8080` | Porta publicada pelo compose. |
+| `FATORIUM_PORTA` | `8443` | Porta publicada pelo compose. |
 | `INVEST_LISTA_ATIVOS` | `config/universo.md` (no container, `/app/data/universo.md`) | Lista Markdown do universo. |
 | `INVEST_COLETAR_NO_BOOT` | `1` | Na primeira execução, roda a coleta inicial em segundo plano. `0` desliga. |
 

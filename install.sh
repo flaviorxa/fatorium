@@ -128,7 +128,7 @@ fi
 docker compose up -d
 
 PORTA_ENV="$(sed -n 's/^FATORIUM_PORTA=//p' .env 2>/dev/null | tail -n 1)"
-PORTA_EXIBIR="${PORTA:-${PORTA_ENV:-8080}}"
+PORTA_EXIBIR="${PORTA:-${PORTA_ENV:-8443}}"
 
 echo
 echo "FATORIUM iniciado."
