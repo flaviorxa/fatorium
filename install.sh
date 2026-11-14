@@ -4,9 +4,10 @@ set -eu
 REPO_COMPOSE="https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml"
 DIR="${FATORIUM_DIR:-$HOME/fatorium}"
 PORTA=""
+GERAR_SENHA=0
 
 uso() {
-  echo "uso: $0 [--porta N]" >&2
+  echo "uso: $0 [--porta N] [--senha]" >&2
 }
 
 while [ $# -gt 0 ]; do
@@ -23,8 +24,12 @@ while [ $# -gt 0 ]; do
       PORTA="${1#--porta=}"
       shift
       ;;
+    --senha)
+      GERAR_SENHA=1
+      shift
+      ;;
     -h|--help)
-      echo "uso: $0 [--porta N]"
+      echo "uso: $0 [--porta N] [--senha]"
       exit 0
       ;;
     *)
@@ -57,21 +62,40 @@ echo "Baixando docker-compose.yml..."
 curl -fsSL "$REPO_COMPOSE" -o docker-compose.yml
 
 if [ ! -f .env ]; then
-  if command -v openssl >/dev/null 2>&1; then
-    INVEST_SENHA="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-32)"
-  else
-    INVEST_SENHA="$(date +%s | sha256sum | cut -c1-32)"
-  fi
-  {
-    printf 'INVEST_SENHA=%s\n' "$INVEST_SENHA"
-    if [ -n "$PORTA" ]; then
-      printf 'FATORIUM_PORTA=%s\n' "$PORTA"
+  if [ "$GERAR_SENHA" = "1" ]; then
+    if command -v openssl >/dev/null 2>&1; then
+      INVEST_SENHA="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-32)"
+    else
+      INVEST_SENHA="$(date +%s | sha256sum | cut -c1-32)"
     fi
-  } > .env
-  chmod 600 .env
-  echo ".env criado com senha aleatória."
+    {
+      printf 'INVEST_SENHA=%s\n' "$INVEST_SENHA"
+      if [ -n "$PORTA" ]; then
+        printf 'FATORIUM_PORTA=%s\n' "$PORTA"
+      fi
+    } > .env
+    chmod 600 .env
+    echo ".env criado com senha aleatória."
+  else
+    if [ -n "$PORTA" ]; then
+      printf 'FATORIUM_PORTA=%s\n' "$PORTA" > .env
+    else
+      : > .env
+    fi
+    chmod 600 .env
+    echo ".env criado sem senha (site aberto)."
+  fi
 else
-  echo ".env já existe; senha atual preservada."
+  echo ".env já existe; configuração atual preservada."
+  if [ "$GERAR_SENHA" = "1" ] && ! grep -q '^INVEST_SENHA=.' .env; then
+    if command -v openssl >/dev/null 2>&1; then
+      INVEST_SENHA="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-32)"
+    else
+      INVEST_SENHA="$(date +%s | sha256sum | cut -c1-32)"
+    fi
+    printf 'INVEST_SENHA=%s\n' "$INVEST_SENHA" >> .env
+    echo "Senha aleatória acrescentada ao .env."
+  fi
   if [ -n "$PORTA" ]; then
     tmp_env="$(mktemp "${TMPDIR:-/tmp}/fatorium-env.XXXXXX")"
     awk -v porta="$PORTA" '
@@ -96,6 +120,11 @@ fi
 
 chmod 600 .env
 
+SENHA_ENV="$(sed -n 's/^INVEST_SENHA=//p' .env 2>/dev/null | tail -n 1)"
+if [ -z "$SENHA_ENV" ]; then
+  echo "Aviso: sem INVEST_SENHA o site fica aberto na rede. Use --senha para exigir login."
+fi
+
 docker compose up -d
 
 PORTA_ENV="$(sed -n 's/^FATORIUM_PORTA=//p' .env 2>/dev/null | tail -n 1)"
@@ -104,5 +133,10 @@ PORTA_EXIBIR="${PORTA:-${PORTA_ENV:-8080}}"
 echo
 echo "FATORIUM iniciado."
 echo "URL: http://localhost:${PORTA_EXIBIR}"
-echo "Usuário: invest"
-echo "Para ver a senha: grep INVEST_SENHA .env"
+if [ -n "$SENHA_ENV" ]; then
+  echo "Autenticação: ligada (usuário invest)"
+  echo "Usuário: invest"
+  echo "Para ver a senha: grep INVEST_SENHA .env"
+else
+  echo "Autenticação: desligada"
+fi

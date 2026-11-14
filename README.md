@@ -25,6 +25,8 @@ sem serviço pago.
 
 ## Instalação rápida (Docker)
 
+Com login (senha aleatória de 32 caracteres no `.env`):
+
 ```bash
 mkdir -p ~/fatorium && cd ~/fatorium
 curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml -o docker-compose.yml
@@ -33,14 +35,23 @@ chmod 600 .env
 docker compose up -d
 ```
 
-Abra `http://localhost:8080` — usuário padrão `invest`, senha a que está em `.env`.
+A senha é opcional: sem `INVEST_SENHA` no `.env` o site sobe aberto, sem login. Para isso, pule o
+`printf`:
+
+```bash
+mkdir -p ~/fatorium && cd ~/fatorium
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml -o docker-compose.yml
+docker compose up -d
+```
+
+Abra `http://localhost:8080` — usuário padrão `invest`, quando a autenticação está ligada.
 A primeira execução dispara a coleta inicial em segundo plano (~15–20 min para o universo padrão);
 até ela terminar, as telas mostram pouco ou nenhum dado.
 
-Ou, em uma linha (cria o diretório, gera a senha e sobe):
+Ou, em uma linha (cria o diretório e sobe; use `--senha` para gerar a senha):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh | sh -s -- --senha
 ```
 
 ### CasaOS
@@ -59,13 +70,13 @@ python3.12 -m venv .venv
 INVEST_SENHA=uma-senha-bem-longa-de-teste .venv/bin/python -m uvicorn app.api.main:app --port 8000
 ```
 
-Testes: `.venv/bin/python -m pytest -q` (312 testes, nenhum acessa a rede).
+Testes: `.venv/bin/python -m pytest -q` (314 testes, nenhum acessa a rede).
 
 ## Configuração
 
 | Variável | Padrão | Para que serve |
 |---|---|---|
-| `INVEST_SENHA` | — (**obrigatória**, 16+ caracteres) | Senha do Basic Auth. Sem ela o app não sobe. |
+| `INVEST_SENHA` | — (opcional) | Com 16+ caracteres exige HTTP Basic; vazio roda sem login. |
 | `INVEST_USUARIO` | `invest` | Usuário do Basic Auth. |
 | `FATORIUM_PORTA` | `8080` | Porta publicada pelo compose. |
 | `INVEST_LISTA_ATIVOS` | `config/universo.md` (no container, `/app/data/universo.md`) | Lista Markdown do universo. |
@@ -88,7 +99,9 @@ dados de terceiros: ele consulta e guarda o resultado na sua máquina.
 
 ## Segurança e escopo
 
-- Um usuário só (Basic Auth), pensado para rede doméstica ou atrás de VPN/reverse proxy.
+- Por padrão o site sobe **sem autenticação** — pensado para rede doméstica, VPN ou atrás de um
+  reverse proxy. Defina `INVEST_SENHA` (16+ caracteres) para exigir login, e nunca publique a porta
+  na internet sem TLS e senha.
 - O container fala HTTP. Para expor na internet, coloque Caddy/Traefik/nginx na frente com TLS.
 - **Um worker apenas**: o agendador vive dentro do processo; duas réplicas duplicariam os jobs.
 - Sem integração com corretora, sem execução de ordens, sem multi-usuário.
@@ -119,6 +132,12 @@ O FATORIUM é gratuito, aberto e roda na sua máquina — sem assinatura, sem ch
 telemetria. Se ele te economiza tempo na análise, dá para retribuir com uma doação ou um café:
 isso paga horas de manutenção, novas fontes de dados e as correções que sempre aparecem quando um
 site muda de layout.
+
+**Pix (chave aleatória)**
+
+```
+e6a254da-9d7f-4a69-80ce-6bbb2b242b01
+```
 
 **Bitcoin (BTC)**
 

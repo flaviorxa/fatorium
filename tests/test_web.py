@@ -191,7 +191,7 @@ def test_rodape_tem_links_do_github_e_doacoes(cliente):
     assert resposta.status_code == 200
     assert 'href="https://github.com/flaviorxa/fatorium"' in resposta.text
     assert 'href="https://github.com/flaviorxa/fatorium#apoie-o-projeto"' in resposta.text
-    assert "Doações (Bitcoin)" in resposta.text
+    assert "Doações (Pix e Bitcoin)" in resposta.text
 
 
 def test_api_screening_devolve_as_seis_listas(cliente):

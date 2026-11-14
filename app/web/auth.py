@@ -1,9 +1,10 @@
-"""Autenticação HTTP Basic obrigatória e não indexação dos buscadores."""
+"""Autenticação HTTP Basic opcional e não indexação dos buscadores."""
 
 from __future__ import annotations
 
 import base64
 import binascii
+import logging
 import os
 import secrets
 from typing import Awaitable, Callable
@@ -19,6 +20,8 @@ DESAFIO_BASIC = 'Basic realm="FATORIUM", charset="UTF-8"'
 CABECALHO_ROBOTS = "noindex, nofollow, noarchive, nosnippet"
 METODOS_QUE_ALTERAM = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
+logger = logging.getLogger(__name__)
+
 
 def _senha() -> str | None:
     return os.getenv("INVEST_SENHA")
@@ -28,18 +31,29 @@ def usuario() -> str:
     return os.getenv("INVEST_USUARIO", USUARIO_PADRAO)
 
 
-def validar_ambiente() -> str:
-    """Garante que a senha existe e é longa o bastante; devolve o usuário.
+def senha_configurada() -> bool:
+    """Autenticação ligada apenas quando ``INVEST_SENHA`` tem conteúdo."""
+    return bool((_senha() or "").strip())
 
-    Falha fechado: sem ``INVEST_SENHA`` válida a aplicação não deve subir.
+
+def validar_ambiente() -> str | None:
+    """Valida a configuração de autenticação; devolve o usuário quando ligada.
+
+    Sem ``INVEST_SENHA`` o app sobe aberto (padrão). Com senha curta, falha fechado.
     """
 
     senha = _senha()
-    if senha is None or len(senha) < TAMANHO_MINIMO_SENHA:
+    if senha is None or not senha.strip():
+        logger.warning(
+            "INVEST_SENHA ausente: autenticacao desativada; qualquer um com acesso a "
+            "porta entra no sistema"
+        )
+        return None
+    if len(senha) < TAMANHO_MINIMO_SENHA:
         raise RuntimeError(
-            "INVEST_SENHA ausente ou com menos de "
-            f"{TAMANHO_MINIMO_SENHA} caracteres. Defina INVEST_SENHA com uma "
-            "senha longa antes de subir a aplicação."
+            "INVEST_SENHA com menos de "
+            f"{TAMANHO_MINIMO_SENHA} caracteres. Use uma senha longa ou deixe a "
+            "variavel vazia para rodar sem autenticacao."
         )
     return usuario()
 
@@ -108,14 +122,16 @@ def origem_confiavel(request: Request) -> bool:
 
 
 class AutenticacaoMiddleware(BaseHTTPMiddleware):
-    """Exige HTTP Basic em todas as rotas, inclusive API e robots.txt."""
+    """Autentica quando há senha configurada; bloqueia escrita de origem estranha sempre."""
 
     async def dispatch(
         self,
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        if not credencial_valida(request.headers.get("authorization")):
+        if senha_configurada() and not credencial_valida(
+            request.headers.get("authorization")
+        ):
             return PlainTextResponse(
                 "Autenticação necessária.\n",
                 status_code=401,

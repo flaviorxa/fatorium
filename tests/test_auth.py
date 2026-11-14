@@ -3,6 +3,7 @@ import base64
 import pytest
 from fastapi.testclient import TestClient
 
+from app import config
 from app.api.main import app
 from app.web.auth import validar_ambiente
 from tests.conftest import SENHA_TESTE, USUARIO_TESTE
@@ -19,10 +20,28 @@ def cliente():
         yield test_client
 
 
-def test_sem_senha_recusa_subir(monkeypatch):
+def test_sem_senha_sobe_aberto(monkeypatch):
     monkeypatch.delenv("INVEST_SENHA", raising=False)
-    with pytest.raises(RuntimeError, match="INVEST_SENHA"):
-        validar_ambiente()
+    assert validar_ambiente() is None
+
+
+def test_sem_senha_serve_sem_autenticacao(monkeypatch, tmp_path):
+    monkeypatch.delenv("INVEST_SENHA", raising=False)
+    monkeypatch.setattr(config, "DB_PATH", tmp_path / "invest.db")
+    with TestClient(app) as test_client:
+        resposta = test_client.get("/")
+    assert resposta.status_code == 200
+    assert "www-authenticate" not in resposta.headers
+
+
+def test_aberto_ainda_bloqueia_escrita_de_origem_estranha(monkeypatch, tmp_path):
+    monkeypatch.delenv("INVEST_SENHA", raising=False)
+    monkeypatch.setattr(config, "DB_PATH", tmp_path / "invest.db")
+    with TestClient(app) as test_client:
+        resposta = test_client.post(
+            "/atualizar", data={"tickers": "PETR4"}, headers={"Origin": "https://evil.example"}
+        )
+    assert resposta.status_code == 403
 
 
 def test_senha_curta_recusa_subir(monkeypatch):
