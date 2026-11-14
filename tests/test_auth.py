@@ -35,7 +35,7 @@ def test_sem_authorization_devolve_401(cliente):
     resposta = cliente.get("/")
     assert resposta.status_code == 401
     assert resposta.headers["WWW-Authenticate"] == (
-        'Basic realm="FarolB3", charset="UTF-8"'
+        'Basic realm="FATORIUM", charset="UTF-8"'
     )
     assert "Autenticação necessária" in resposta.text
 

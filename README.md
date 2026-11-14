@@ -1,10 +1,11 @@
-# FarolB3
+# FATORIUM
 
-Plataforma local de análise fundamentalista para ações, FIIs, ETFs, BDRs e cripto da B3.
-Coleta dados de fontes públicas, calcula indicadores, monta rankings e backtests, e serve um site
-próprio com login — tudo em um container, sem chave de API e sem serviço pago.
+Inteligência quantitativa para investimentos: plataforma local de análise fundamentalista para ações,
+FIIs, ETFs, BDRs e cripto da B3. Coleta dados de fontes públicas, calcula indicadores, monta
+rankings e backtests, e serve um site próprio com login — tudo em um container, sem chave de API e
+sem serviço pago.
 
-[![CI](https://github.com/flaviorxa/farolb3/actions/workflows/ci.yml/badge.svg)](https://github.com/flaviorxa/farolb3/actions/workflows/ci.yml)
+[![CI](https://github.com/flaviorxa/fatorium/actions/workflows/ci.yml/badge.svg)](https://github.com/flaviorxa/fatorium/actions/workflows/ci.yml)
 [![Licença: AGPL v3](https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-blue.svg)](LICENSE)
 
 > Conteúdo informativo. Não é recomendação de investimento nem consultoria regulada pela CVM/Anbima.
@@ -25,8 +26,8 @@ próprio com login — tudo em um container, sem chave de API e sem serviço pag
 ## Instalação rápida (Docker)
 
 ```bash
-mkdir -p ~/farolb3 && cd ~/farolb3
-curl -fsSL https://raw.githubusercontent.com/flaviorxa/farolb3/main/docker-compose.yml -o docker-compose.yml
+mkdir -p ~/fatorium && cd ~/fatorium
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml -o docker-compose.yml
 printf 'INVEST_SENHA=%s\n' "$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-32)" > .env
 chmod 600 .env
 docker compose up -d
@@ -39,16 +40,16 @@ até ela terminar, as telas mostram pouco ou nenhum dado.
 Ou, em uma linha (cria o diretório, gera a senha e sobe):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/flaviorxa/farolb3/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/flaviorxa/fatorium/main/install.sh | sh
 ```
 
 ### CasaOS
 
 O `docker-compose.yml` traz metadados `x-casaos`, então dá para instalar como app personalizado
 (CasaOS → App Store → "Install a customized app" → colar o compose) ou usar o `install.sh` acima.
-O volume `farolb3-data` guarda banco, cache da CVM e a lista de ativos.
+O volume `fatorium-data` guarda banco, cache da CVM e a lista de ativos.
 
-> A imagem é construída **só no GitHub Actions** e publicada em `ghcr.io/flaviorxa/farolb3`.
+> A imagem é construída **só no GitHub Actions** e publicada em `ghcr.io/flaviorxa/fatorium`.
 
 ## Rodando sem Docker
 
@@ -66,7 +67,7 @@ Testes: `.venv/bin/python -m pytest -q` (312 testes, nenhum acessa a rede).
 |---|---|---|
 | `INVEST_SENHA` | — (**obrigatória**, 16+ caracteres) | Senha do Basic Auth. Sem ela o app não sobe. |
 | `INVEST_USUARIO` | `invest` | Usuário do Basic Auth. |
-| `FAROLB3_PORTA` | `8080` | Porta publicada pelo compose. |
+| `FATORIUM_PORTA` | `8080` | Porta publicada pelo compose. |
 | `INVEST_LISTA_ATIVOS` | `config/universo.md` (no container, `/app/data/universo.md`) | Lista Markdown do universo. |
 | `INVEST_COLETAR_NO_BOOT` | `1` | Na primeira execução, roda a coleta inicial em segundo plano. `0` desliga. |
 

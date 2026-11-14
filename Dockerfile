@@ -20,10 +20,10 @@ COPY scripts/ /app/scripts/
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-RUN useradd --create-home --uid 10001 farolb3 \
+RUN useradd --create-home --uid 10001 fatorium \
     && mkdir -p /app/data \
-    && chown -R farolb3:farolb3 /app
-USER farolb3
+    && chown -R fatorium:fatorium /app
+USER fatorium
 
 ENV INVEST_HOST=0.0.0.0 \
     INVEST_PORTA=8000 \

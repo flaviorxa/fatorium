@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-REPO_COMPOSE="https://raw.githubusercontent.com/flaviorxa/farolb3/main/docker-compose.yml"
-DIR="${FAROLB3_DIR:-$HOME/farolb3}"
+REPO_COMPOSE="https://raw.githubusercontent.com/flaviorxa/fatorium/main/docker-compose.yml"
+DIR="${FATORIUM_DIR:-$HOME/fatorium}"
 PORTA=""
 
 uso() {
@@ -65,7 +65,7 @@ if [ ! -f .env ]; then
   {
     printf 'INVEST_SENHA=%s\n' "$INVEST_SENHA"
     if [ -n "$PORTA" ]; then
-      printf 'FAROLB3_PORTA=%s\n' "$PORTA"
+      printf 'FATORIUM_PORTA=%s\n' "$PORTA"
     fi
   } > .env
   chmod 600 .env
@@ -73,19 +73,19 @@ if [ ! -f .env ]; then
 else
   echo ".env já existe; senha atual preservada."
   if [ -n "$PORTA" ]; then
-    tmp_env="$(mktemp "${TMPDIR:-/tmp}/farolb3-env.XXXXXX")"
+    tmp_env="$(mktemp "${TMPDIR:-/tmp}/fatorium-env.XXXXXX")"
     awk -v porta="$PORTA" '
       BEGIN { atualizado = 0 }
-      /^FAROLB3_PORTA=/ {
+      /^FATORIUM_PORTA=/ {
         if (!atualizado) {
-          print "FAROLB3_PORTA=" porta
+          print "FATORIUM_PORTA=" porta
           atualizado = 1
         }
         next
       }
       { print }
       END {
-        if (!atualizado) print "FAROLB3_PORTA=" porta
+        if (!atualizado) print "FATORIUM_PORTA=" porta
       }
     ' .env > "$tmp_env"
     cat "$tmp_env" > .env
@@ -98,11 +98,11 @@ chmod 600 .env
 
 docker compose up -d
 
-PORTA_ENV="$(sed -n 's/^FAROLB3_PORTA=//p' .env 2>/dev/null | tail -n 1)"
+PORTA_ENV="$(sed -n 's/^FATORIUM_PORTA=//p' .env 2>/dev/null | tail -n 1)"
 PORTA_EXIBIR="${PORTA:-${PORTA_ENV:-8080}}"
 
 echo
-echo "FarolB3 iniciado."
+echo "FATORIUM iniciado."
 echo "URL: http://localhost:${PORTA_EXIBIR}"
 echo "Usuário: invest"
 echo "Para ver a senha: grep INVEST_SENHA .env"
